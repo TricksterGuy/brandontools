@@ -1,0 +1,18 @@
+Optional if you want the gimp mode 4 functionality if you want this then do this first!
+---------------------------------------------------
+1) sudo apt-get install gimp (To get GIMP) (You need to do this if you are running Ubuntu)
+2) Run GIMP at least once to generate directories
+3) Copy the file makeindexed.scm to ~/.gimp-2.6/scripts
+4) You can use this command to do 3) cp makeindexed.scm ~/.gimp-2.6/scripts
+
+To install brandontools
+-----------------------
+0) If you want the mode 4 gimp functionality (used with the Mode 4 homework) then do the above first.
+1) Like any other .deb file sudo dpkg -i <deb file>
+2) If it fails you are missing dependencies.  You may do sudo apt-get install -f to get them in this case
+  Here is the exact list of dependancies
+    libmagick++5 (or libmagick++X where X is the version number so if 5 fails try 6)
+    libmagickcore5
+    libmagickwand5
+3) Type brandontools in a terminal if it says 0.9.3.0 then you are set up.
+4) Read the included readme file on how to use the program (make sure your command is correct, because I do little error checking!)

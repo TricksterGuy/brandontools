@@ -1,0 +1,89 @@
+11 April 2013
+   released version 0.9.2/3 of BrandonTools
+
+     Change log:
+        -New: Fixed problems with ubuntu 12.10 (.2) / Fixed problem with my fix of problems (.3)
+
+31 March 2011
+   released version 0.9.1 of BrandonTools
+
+     Change log:
+        -New: Added -palette=num Option which allows you to define how many colors a mode 4 image is exported with.
+	    -New: Also updated the gimp script for generating a palette of a certain size.
+
+28 February 2011
+   released version 0.9.0 of BrandonTools
+
+     Change log:
+        -New: For mode 4 exporting you have an option to run gimp to generate the palette.
+              Be sure you have set this up (You have gimp and you have installed the script). The option is called -usegimp.
+        -Updated: If your images contain less than 256 colors you should have the best quality.
+
+15 January 2011
+   released version 0.8.0 of BrandonTools
+
+     Change log:
+        -New: Brand new palette generation algorithm. Written from stratch.
+        -New: dither and dither_level parameters
+        -Updated: The blocks parameter has been removed and replaced by a weights option
+
+
+09 November 2010
+   released version 0.7.1 of BrandonTools
+
+     Change log:
+        -Fixed: If when exporting a single image in mode4 and it has less than 256 colors then it will not run the fancy palette generating algorithm!
+
+08 November 2010
+   released version 0.7.0 of BrandonTools
+
+     Change log:
+        -New: Instead of saying I'm awesome (which I am!) It now generates a random quote/fortune in the .c.h header
+        -New: Support for animated images / multi-image images
+        -New: Added option -transparent=r,g,b which makes a color transparent (adds a transparent macro for mode3, makes it palette entry 0 for mode 4)
+        -New: Option -resize will now resize ALL of the images if you give it multiple images.
+
+09 July 2010
+   released version 0.6.0 of BrandonTools
+
+     Change log:
+        -New: -blocks parameter This is advanced and modifies the palette algorithm in the number of "Blocks" it finds. Default value is 256.
+        -New: -start parameter This modifies the start of the palette and will offset all numbers in the array by this number.
+        -Updated: you pass optional parameters to the program in the form of -param=value now this makes parsing a lot easier for me.
+
+16 May 2010
+   released version 0.5 of BrandonTools
+
+     Change log:
+        -New: New palette generating algorithm that doesn't suck!
+
+03 April 2010
+   released version 0.4.1 of BrandonTools
+
+     Change log:
+        -Fixed: Version numbers when exporting
+        
+29 March 2010
+   released version 0.4.0 of BrandonTools
+
+     Change log:
+        -New: Initial Batch image processing support (very useful for mode4)
+        -Fixed: Program was generating a lol.png file when it exported that has been removed (was there for testing purposes)
+
+March 2010
+   released version 0.3.0 of BrandonTools
+   
+     Change log:
+        -New: Resize option added useful if you don't want to open your image in gimp or something and then resize it
+
+March 2010
+   released version 0.2.0 of BrandonTools
+   
+     Change log:
+        -New: Mode4 support
+
+March 2010
+   released version 0.1.0 of BrandonTools
+
+      Change log:
+        -New: Initial release with mode3 support
