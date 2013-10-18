@@ -1,5 +1,5 @@
 # File intended only to be ran with GNU make. Use any other make program at your own risk!
-OUTPUT := brandontools-gui
+OUTPUT := brandontools
 WXCPPFLAGS := $(shell wx-config --cppflags)
 WXCPPLIBS := $(shell wx-config --libs)
 CPPFLAGS := $(MASTER_CPP_FLAGS) -Wall -I. -I/usr/include/ImageMagick $(WXCPPFLAGS)
@@ -9,7 +9,7 @@ CC := g++
 CXX := $(CC)
 RM := rm
 INSTALL := install
-FILES := BrandonApp.o BrandonFrame.o BrandonFrameGUI.o
+FILES := main.o cpercep.o mediancut.o mode3batchexporter.o mode3exporter.o mode4batchexporter.o mode4exporter.o shared.o fortunes.o fortunegen.o
 
 all : $(OUTPUT)
 
