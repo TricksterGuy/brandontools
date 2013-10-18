@@ -475,7 +475,7 @@ wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int
     pgimp = useGIMP ? "-usegimp" : "";
     presize = wxString::Format("-resize=%d,%d", width, height);
     pstart = wxString::Format("-start=%d", startIndex);
-    ptransparent = isTransparent ? wxString::Format("-transparent=%d,%d,%d", transparent.Red(), transparent.Green(), transparent.Blue()) : wxEmptyString;
+    ptransparent = isTransparent ? wxString::Format("-transparent=%d,%d,%d", transparent.Red(), transparent.Green(), transparent.Blue()) : "";
     pweights = wxString::Format("-weights=%d,%d,%d,%d", weights[0], weights[1], weights[2], weights[3]);
     pdither = wxString::Format("-dither=%d", dither);
     pditherLevel = wxString::Format("-dither-level=%f", ditherLevel);

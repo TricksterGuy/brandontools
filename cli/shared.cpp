@@ -106,9 +106,9 @@ void Header::AddImage(const Magick::Image& image, bool frame)
 {
     char buffer[1024];
     if (frame)
-        sprintf(buffer, "%s (frame %d) %d@%d", image.baseFilename().c_str(), image.scene(), image.columns(), image.rows());
+        sprintf(buffer, "%s (frame %ld) %ld@%ld", image.baseFilename().c_str(), image.scene(), image.columns(), image.rows());
     else
-        sprintf(buffer, "%s %d@%d", image.baseFilename().c_str(), image.columns(), image.rows());
+        sprintf(buffer, "%s %ld@%ld", image.baseFilename().c_str(), image.columns(), image.rows());
     std::string imagestr = buffer;
     images.push_back(imagestr);
 }

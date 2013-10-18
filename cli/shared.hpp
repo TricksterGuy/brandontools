@@ -56,12 +56,12 @@ void DoMode4Multi(std::vector<Magick::Image> images, const ExportParams& params)
 #define WARNING_WIDTH "\
 Warning: Image (%s) is too wide to fit on the gameboy screen\n\
 Please use the resize option if you did not mean this\n\
-Image width given %d\n"
+Image width given %ld\n"
 
 #define WARNING_HEIGHT "\
 Warning: Image (%s) is too tall to fit on the gameboy screen\n\
 Please use the resize option if you did not mean this\n\
-Image height given %d\n"
+Image height given %ld\n"
 
 #define round(x) (((x) < 0) ? ceil((x) - 0.5) : floor((x) + 0.5))
 
