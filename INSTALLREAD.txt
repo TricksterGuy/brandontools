@@ -1,3 +1,5 @@
+IMPORTANT THIS IS A DEVELOPMENT RELEASE AND NOT OFFICIALLY AVAILABLE TO THE PUBLIC YET.  THIS SHOULD BE FINISHED SATURDAY.
+
 Optional if you want the gimp mode 4 functionality if you want this then do this first!
 ---------------------------------------------------
 1) sudo apt-get install gimp (To get GIMP) (You need to do this if you are running Ubuntu)
@@ -8,11 +10,11 @@ Optional if you want the gimp mode 4 functionality if you want this then do this
 To install brandontools
 -----------------------
 0) If you want the mode 4 gimp functionality (used with the Mode 4 homework) then do the above first.
-1) Like any other .deb file sudo dpkg -i <deb file>
-2) If it fails you are missing dependencies.  You may do sudo apt-get install -f to get them in this case
-  Here is the exact list of dependancies
-    libmagick++5 (or libmagick++X where X is the version number so if 5 fails try 6)
-    libmagickcore5
-    libmagickwand5
+1) Install dependancies.  You should already have wxwidgets 2.9 by the complx install instructions.
+   However this time you need ImageMagick or magick++ specifically. so get that terminal ready
+   sudo apt-get install libmagick++-dev libmagickcore-dev libmagickwand-dev
+2) Time to build the program in a terminal in the root of the source tree, this the same directory where this file you are reading is located, execute the following.
+    make && sudo make install
+    if there are any errors please report them to me directly.
 3) Type brandontools in a terminal if it says 0.9.3.0 then you are set up.
-4) Read the included readme file on how to use the program (make sure your command is correct, because I do little error checking!)
+4) Read the included readme file on how to use the program.

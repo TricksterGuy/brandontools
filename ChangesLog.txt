@@ -1,3 +1,8 @@
+18 October 2013
+   released version 0.9.4 of BrandonTools
+     Change log:
+        -New: Release as source code with GUI version and CLI version. (more to come later)
+
 11 April 2013
    released version 0.9.2/3 of BrandonTools
 
