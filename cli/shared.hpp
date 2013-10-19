@@ -28,7 +28,10 @@ class Header
 struct ExportParams
 {
     // General Export stuff
+    int mode;
     std::string name;
+    std::vector<std::string> files;
+    std::vector<Magick::Image> images;
 
     // Optional stuff
     int transparent_color;

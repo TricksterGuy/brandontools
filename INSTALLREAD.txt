@@ -1,7 +1,11 @@
 IMPORTANT THIS IS A DEVELOPMENT RELEASE AND NOT OFFICIALLY AVAILABLE TO THE PUBLIC YET.  THIS SHOULD BE FINISHED SATURDAY.
 
-Optional if you want the gimp mode 4 functionality if you want this then do this first!
----------------------------------------------------
+Optional if you want the gimp mode 4 functionality
+Description:
+This isn't really necessary unless you don't trust me and don't know how to use gimp.
+There are two algorithms I use for mode 4, my own algorithm or send your image to gimp first. 
+Installing this will allow brandontools to automagically run gimp for you and convert the image to indexed color.
+However you can achieve the same effect by converting your images to indexed color beforehand.
 1) sudo apt-get install gimp (To get GIMP) (You need to do this if you are running Ubuntu)
 2) Run GIMP at least once to generate directories
 3) Copy the file makeindexed.scm to ~/.gimp-2.6/scripts
@@ -16,5 +20,5 @@ To install brandontools
 2) Time to build the program in a terminal in the root of the source tree, this the same directory where this file you are reading is located, execute the following.
     make && sudo make install
     if there are any errors please report them to me directly.
-3) Type brandontools in a terminal if it says 0.9.3.0 then you are set up.
+3) Type brandontools in a terminal if it says 0.9.4.0 then you are set up.
 4) Read the included readme file on how to use the program.
