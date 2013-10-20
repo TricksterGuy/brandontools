@@ -181,7 +181,6 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     // get unnamed parameters
     for (unsigned int i = 0; i < parser.GetParamCount(); i++)
     {
-        wxPuts(parser.GetParam(i));
         files.Add(parser.GetParam(i));
     }
 
@@ -222,7 +221,7 @@ bool BrandonToolsApp::Validate()
     // Mode check
     if (mode0 + mode3 + mode4 + sprites != 1)
     {
-        printf("[FATAL] Only 1 of -modeXXX and -sprites can be set at a time.\n");
+        printf("[FATAL] Only 1 of -modeXXX and -sprites can be set at a time or none set.\n");
         return false;
     }
 
@@ -386,8 +385,8 @@ bool BrandonToolsApp::DoHandleResize()
     {
         for (unsigned int i = 0; i < eparams.images.size(); i++)
         {
-            if (eparams.images[i].columns() > 240) printf(WARNING_WIDTH, eparams.images[i].baseFilename().c_str(), eparams.images[i].columns());
-            if (eparams.images[i].rows() > 160) printf(WARNING_HEIGHT, eparams.images[i].baseFilename().c_str(), eparams.images[i].rows());
+            if (eparams.images[i].columns() > 240) printf(WARNING_WIDTH, eparams.images[i].baseFilename().c_str(), (int)eparams.images[i].columns());
+            if (eparams.images[i].rows() > 160) printf(WARNING_HEIGHT, eparams.images[i].baseFilename().c_str(), (int)eparams.images[i].rows());
         }
     }
 

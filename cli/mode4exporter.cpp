@@ -57,7 +57,7 @@ static void WriteC(Image image, const ExportParams& params)
         printf("Warning: Image width is not a multiple of 2\n\
 		I'm going to continue doing my job since I don't care\n\
 		if you know what you are doing\n\
-		But I'd just thought I'd let you know");
+		But I'd just thought I'd let you know\n");
     }
 
     unsigned char* imagePixels = new unsigned char[num_pixels * 3];

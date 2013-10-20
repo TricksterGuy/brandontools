@@ -187,7 +187,7 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
                 printf("Warning: Image %s width is not a multiple of 2\n\
 		    I'm going to continue doing my job since I don't care\n\
 		    if you know what you are doing\n\
-		    But I'd just thought I'd let you know", images[k].comment().c_str());
+		    But I'd just thought I'd let you know\n", images[k].comment().c_str());
 	    }
 
         std::string name_cap = name;
