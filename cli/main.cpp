@@ -244,7 +244,7 @@ bool BrandonToolsApp::Validate()
     if (!resize.IsEmpty())
     {
         std::vector<std::string> tokens;
-        split(transparent.ToStdString(), ',', tokens);
+        split(resize.ToStdString(), ',', tokens);
         if (tokens.size() != 2)
         {
             printf("[FATAL] error parsing -resize only need 2 comma separated values, %d given\n.", tokens.size());
