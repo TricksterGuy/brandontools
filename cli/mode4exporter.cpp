@@ -34,6 +34,7 @@ static void WriteC(Image image, const ExportParams& params)
     std::string filename_h = params.name + ".h";
     std::string name = params.name;
     Chop(name);
+    name = Sanitize(name);
     std::string name_cap = name;
     char buffer[7];
     int spacecounter = 0;

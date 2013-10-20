@@ -25,6 +25,7 @@ void DoMode4Multi(std::vector<Magick::Image> images, const ExportParams& params)
         InitFiles(file_c, file_h, params);
         std::string name = params.name;
         Chop(name);
+        name = Sanitize(name);
 
         /* The trick is to compose the images and get a global palette */
         for (unsigned int i = 0; i < images.size(); i++)
@@ -52,6 +53,7 @@ static void InitFiles(ofstream& file_c, ofstream& file_h, const ExportParams& pa
 {
     std::string name = params.name;
     Chop(name);
+    name = Sanitize(name);
     std::string name_cap = name;
     transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
 
@@ -71,7 +73,10 @@ static void InitFiles(ofstream& file_c, ofstream& file_h, const ExportParams& pa
 static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Image> images, const ExportParams& params)
 {
     std::string filename_cap = params.name;
+    Chop(filename_cap);
+    Sanitize(filename_cap);
     transform(filename_cap.begin(), filename_cap.end(), filename_cap.begin(), (int(*)(int)) std::toupper);
+
     char buffer[7];
     int spacecounter = 0;
 
@@ -108,8 +113,6 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
     header.Write(file_h);
     file_h << "#ifndef " << filename_cap << "_BITMAP_H\n";
     file_h << "#define " << filename_cap << "_BITMAP_H\n\n";
-
-    transform(filename_cap.begin(), filename_cap.end(), filename_cap.begin(), (int(*)(int)) std::toupper);
 
     unsigned int num_colors = palette.size() + params.offset;
     // Error check for p_offset
@@ -169,18 +172,7 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
     // Write Each Image
     for (unsigned int k = 0; k < images.size(); k++)
     {
-        std::string name = images[k].comment();
-        Chop(name);
-        int last = name.rfind('.');
-        name = name.substr(0, last);
-
-        // If this is part of a multi-image append frame number;
-        if (images[k].label()[0] == 'T')
-        {
-            std::ostringstream ap;
-            ap << name << images[k].scene();
-            name = ap.str();
-        }
+        std::string name = params.names[k];
 
 	    if (images[k].columns() % 2)
 	    {
@@ -233,6 +225,8 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
     int spacecounter = 0;
 
     std::string filename_cap = params.name;
+    Chop(filename_cap);
+    filename_cap = Sanitize(filename_cap);
     transform(filename_cap.begin(), filename_cap.end(), filename_cap.begin(), (int(*)(int)) std::toupper);
 
     header.Write(file_h);
@@ -242,20 +236,7 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
     for (unsigned int k = 0; k < images.size(); k++)
     {
         Image& image = images[k];
-
-        std::string name = image.comment();
-        Chop(name);
-        int last = name.rfind('.');
-        name = name.substr(0, last);
-
-        // If this is part of a multi-image append frame number;
-        if (image.label()[0] == 'T')
-        {
-            std::ostringstream ap;
-            ap << name << image.scene();
-            name = ap.str();
-        }
-
+        std::string name = params.names[k];
         std::string name_cap = name;
         transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
 
@@ -372,5 +353,4 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
     file_h << "#endif";
     file_c.close();
     file_h.close();
-
 }

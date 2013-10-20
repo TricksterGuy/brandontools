@@ -106,9 +106,9 @@ void Header::AddImage(const Magick::Image& image, bool frame)
 {
     char buffer[1024];
     if (frame)
-        sprintf(buffer, "%s (frame %ld) %ld@%ld", image.baseFilename().c_str(), image.scene(), image.columns(), image.rows());
+        sprintf(buffer, "%s (frame %d) %d@%d", image.baseFilename().c_str(), (int)image.scene(), (int)image.columns(), (int)image.rows());
     else
-        sprintf(buffer, "%s %ld@%ld", image.baseFilename().c_str(), image.columns(), image.rows());
+        sprintf(buffer, "%s %d@%d", image.baseFilename().c_str(), (int)image.columns(), (int)image.rows());
     std::string imagestr = buffer;
     images.push_back(imagestr);
 }
@@ -381,4 +381,15 @@ void Chop(std::string& filename)
     }
 
     filename = filename.substr(index+1);
+}
+
+std::string Sanitize(const std::string& filename)
+{
+    std::stringstream out;
+    for (int i = 0; i < filename.size(); i++)
+    {
+        if ((filename[i] >= 'A' && filename[i] <= 'Z') || (filename[i] >= 'a' && filename[i] <= 'z') || (filename[i] >= '0' && filename[i] <= '9') || filename[i] == '_')
+            out.put(filename[i]);
+    }
+    return out.str();
 }

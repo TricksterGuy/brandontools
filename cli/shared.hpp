@@ -29,8 +29,9 @@ struct ExportParams
 {
     // General Export stuff
     int mode;
-    std::string name;
+    std::string name; // Filename of the exported file + array name if not batch.
     std::vector<std::string> files;
+    std::vector<std::string> names; // In batch names of the arrays for the images.
     std::vector<Magick::Image> images;
 
     // Optional stuff
@@ -76,5 +77,6 @@ Magick::Image ConvertToGBA(Magick::Image image);
 void split(const std::string& s, char delimiter, std::vector<std::string>& tokens);
 void RiemersmaDither(std::vector<Color>::iterator image, std::vector<int>& indexedImage, int width, int height, int dither, float ditherlevel);
 void Chop(std::string& filename);
+std::string Sanitize(const std::string& filename);
 
 #endif

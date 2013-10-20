@@ -9,7 +9,7 @@
 using namespace Magick;
 using namespace std;
 
-static void WriteOut(ofstream& file_c, ofstream& file_h, Magick::Image image, const ExportParams& params);
+static void WriteOut(ofstream& file_c, ofstream& file_h, unsigned int index, Magick::Image image, const ExportParams& params);
 static void InitFiles(ofstream& file_c, ofstream& file_h, const ExportParams& params);
 
 void DoMode3Multi(std::vector<Magick::Image> images, const ExportParams& params)
@@ -17,7 +17,10 @@ void DoMode3Multi(std::vector<Magick::Image> images, const ExportParams& params)
     header.SetMode(3);
     try
     {
-        std::string name_cap = params.name;
+        std::string name = params.name;
+        Chop(name);
+        name = Sanitize(name);
+        std::string name_cap = name;
         transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
         ofstream file_c, file_h;
         InitFiles(file_c, file_h, params);
@@ -35,21 +38,18 @@ void DoMode3Multi(std::vector<Magick::Image> images, const ExportParams& params)
         for (unsigned int i = 0; i < images.size(); i++)
         {
             images[i] = ConvertToGBA(images[i]);
-            WriteOut(file_c, file_h, images[i], params);
+            WriteOut(file_c, file_h, i, images[i], params);
         }
 
 
         if (params.animated)
         {
-            file_h << "extern const unsigned short* " << params.name << "_frames[" << images.size() << "];\n\n";
-            file_c << "const unsigned short* " << params.name << "_frames[" << images.size() << "] =\n{\n\t";
+            file_h << "extern const unsigned short* " << name << "_frames[" << images.size() << "];\n\n";
+            file_c << "const unsigned short* " << name << "_frames[" << images.size() << "] =\n{\n\t";
             int space_counter = 0;
             for (unsigned int i = 0; i < images.size(); i++)
             {
-                std::string name = images[i].comment();
-                Chop(name);
-                int last = name.rfind('.');
-                name = name.substr(0, last);
+                std::string name = params.names[i];
 
                 file_c << name << ", ";
                 space_counter++;
@@ -82,6 +82,7 @@ static void InitFiles(ofstream& file_c, ofstream& file_h, const ExportParams& pa
     std::string filename_h = params.name + ".h";
     std::string name = params.name;
     Chop(name);
+    name = Sanitize(name);
     std::string name_cap = name;
     transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
 
@@ -100,21 +101,9 @@ static void InitFiles(ofstream& file_c, ofstream& file_h, const ExportParams& pa
     file_h << "#define " << name_cap << "_BITMAP_H\n\n";
 }
 
-static void WriteOut(ofstream& file_c, ofstream& file_h, Magick::Image image, const ExportParams& params)
+static void WriteOut(ofstream& file_c, ofstream& file_h, unsigned int index, Magick::Image image, const ExportParams& params)
 {
-    std::string name = image.comment();
-    Chop(name);
-    int last = name.rfind('.');
-    name = name.substr(0, last);
-
-    // If this is part of a multi-image append frame number;
-    if (image.label()[0] == 'T')
-    {
-        std::ostringstream ap;
-        ap << name << image.scene();
-        name = ap.str();
-    }
-
+    std::string name = params.names[index];
     std::string name_cap = name;
     transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
 

@@ -33,6 +33,7 @@ static void WriteC(Magick::Image image, const ExportParams& params)
     std::string filename_h = params.name + ".h";
     std::string name = params.name;
     Chop(name);
+    name = Sanitize(name);
     std::string name_cap = name;
 
     transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);

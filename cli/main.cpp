@@ -135,7 +135,7 @@ bool full_palette = false;
 // All of the read in command line flags will be in this structure.
 ExportParams eparams;
 
- /** OnInit
+/** OnInit
   *
   * Initializes the program
   */
@@ -405,6 +405,56 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
             isAnim = eparams.images[i - 1].scene() < eparams.images[i].scene();
         header.AddImage(eparams.images[i], isAnim);
         eparams.images[i].label(isAnim ? "T" : "F");
+    }
+
+    std::map<std::string, int> used_times;
+    std::set<std::string> output_names;
+    for (unsigned int i = 0; i < eparams.images.size(); i++)
+    {
+        std::string filename = eparams.images[i].baseFilename();
+        Chop(filename);
+        int last = filename.rfind('.');
+        filename = Sanitize(filename.substr(0, last));
+        used_times[filename] += 1;
+        if (used_times[filename] > 1)
+        {
+            std::stringstream out;
+            out << filename;
+            out << used_times[filename];
+            std::string saved = out.str();
+            std::string attempt = saved;
+            int fails = 1;
+            while (output_names.find(attempt) != output_names.end())
+            {
+                std::stringstream out2;
+                out2 << saved << "_" << fails;
+                attempt = out2.str();
+                fails++;
+            }
+            filename = attempt;
+        }
+        else if (output_names.find(filename) != output_names.end())
+        {
+            // Was already used due to if statement above, and another filename had a name that was generated from the rollover
+            // This if statement gives it a nice name as filename_1, filename_2.
+            used_times[filename] = 0;
+            std::string saved = filename;
+            std::string attempt = filename;
+            int fails = 1;
+            while (output_names.find(attempt) != output_names.end())
+            {
+                std::stringstream out2;
+                out2 << saved << "_" << fails;
+                attempt = out2.str();
+                fails++;
+            }
+            filename = attempt;
+        }
+
+        output_names.insert(filename);
+        if (logging)
+            printf("file: %s\n", filename.c_str());
+        eparams.names.push_back(filename);
     }
 
     return true;

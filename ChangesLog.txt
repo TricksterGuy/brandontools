@@ -1,7 +1,10 @@
-18 October 2013
-   released version 0.9.4 of BrandonTools
+20 October 2013
+   released version 0.9.5 of BrandonTools
      Change log:
-        -New: Release as source code with GUI version and CLI version. (more to come later)
+        -New: Release as source code with GUI version and CLI version.
+        -Fixed: Sanitize any file names coming into the program.  This ensures any exported files are compilable.
+        -Fixed: New naming system for batch file processing.
+        -New: tests.sh which has tests and sample commands to ensure that there is a valid imagemagick install on the computer.
 
 11 April 2013
    released version 0.9.2/3 of BrandonTools
