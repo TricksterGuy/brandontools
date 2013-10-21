@@ -124,8 +124,8 @@ bool animated = false;
 // Mode 4 options
 bool usegimp = false;
 bool split_palette = false;
-long start = -1;
-long palette_size = -1;
+long start = 0;
+long palette_size = 256;
 wxString weights = "";
 long dither = 1;
 long dither_level = 80;
@@ -207,14 +207,14 @@ bool BrandonToolsApp::Validate()
     eparams.transparent_color = -1;
     eparams.animated = animated;
 
-    eparams.offset = (start == -1) ? 0 : start;
+    eparams.offset = start;
     eparams.weights[0] = 25;
     eparams.weights[1] = 25;
     eparams.weights[2] = 25;
     eparams.weights[3] = 25;
     eparams.dither = dither;
     eparams.dither_level = dither_level / 100.0f;
-    eparams.palette = (palette_size == -1) ? 255 : palette_size;
+    eparams.palette = palette_size;
     eparams.fullpalette = full_palette;
     eparams.split = split_palette;
 
@@ -511,6 +511,14 @@ bool BrandonToolsApp::DoExportImages()
 // Do cool things here
 int BrandonToolsApp::OnRun()
 {
+    // Seed random number for quote generator the seed changes everyday
+    // Well not exactly it will reset when GMT reaches 12am
+    // Oh well close enough
+    time_t timeh = time(NULL);
+    srand(timeh / 60 / 60 / 24);
+
+    cpercep_init();
+
     if (!Validate())
         return EXIT_FAILURE;
     if (!DoLoadImages())

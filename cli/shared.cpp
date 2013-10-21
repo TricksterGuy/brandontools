@@ -229,7 +229,6 @@ int paletteSearch(Color a)
     {
         double dist = 0;
         Color b = palette[i];
-
         dist = a.Distance(b);
         if (dist < bestd)
         {
@@ -386,7 +385,7 @@ void Chop(std::string& filename)
 std::string Sanitize(const std::string& filename)
 {
     std::stringstream out;
-    for (int i = 0; i < filename.size(); i++)
+    for (unsigned int i = 0; i < filename.size(); i++)
     {
         if ((filename[i] >= 'A' && filename[i] <= 'Z') || (filename[i] >= 'a' && filename[i] <= 'z') || (filename[i] >= '0' && filename[i] <= '9') || filename[i] == '_')
             out.put(filename[i]);

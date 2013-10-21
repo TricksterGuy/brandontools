@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <cassert>
 #include "shared.hpp"
 
 ///TODO Implemented -animated flag in this file.
@@ -196,6 +197,8 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
         {
             int px1 = pixels[i] + params.offset;
             int px2 = pixels[i + 1] + params.offset;
+            //assert(px1 < palette.size());
+            //assert(px2 < palette.size());
             unsigned short byte = px1 | (px2 << 8);
             sprintf(buffer, "0x%04x", byte);
             file_c << buffer;
@@ -322,6 +325,8 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
             // Increase by p_offset here
             int px1 = indexedImage[i] + params.offset;
             int px2 = indexedImage[i + 1] + params.offset;
+            //assert(px1 < palette.size());
+            //assert(px2 < palette.size());
             unsigned short byte = px1 | (px2 << 8);
             sprintf(buffer, "0x%04x", byte);
             file_c << buffer;

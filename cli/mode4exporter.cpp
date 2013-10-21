@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include "shared.hpp"
+#include <cassert>
 
 using Magick::Image;
 using namespace std;
@@ -130,6 +131,8 @@ static void WriteC(Image image, const ExportParams& params)
         // Increase by p_offset here
         int px1 = indexedImage[i] + params.offset;
         int px2 = indexedImage[i + 1] + params.offset;
+        //assert(px1 < palette.size());
+        //assert(px2 < palette.size());
         unsigned short byte = px1 | (px2 << 8);
         sprintf(buffer, "0x%04x", byte);
         file_c << buffer;
