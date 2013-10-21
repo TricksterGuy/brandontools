@@ -239,7 +239,7 @@ bool BrandonToolsApp::Validate()
     eparams.name = files[0];
     for (unsigned int i = 1; i < files.size(); i++)
         // Validate file's names here.
-        eparams.files.push_back(files[i]);
+        eparams.files.push_back(files[i].ToStdString());
 
     if (!resize.IsEmpty())
     {
