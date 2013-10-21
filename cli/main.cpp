@@ -69,7 +69,8 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         "palette.  Only if you have copied makeindexed.scm in gimp's plugin directories.",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "split", "split",
-        "Only for mode4 exports.  Document this.",
+        "Only for mode4 exports.  Exports each individual image with its own palette.  Useful for sets of screens. "
+        "Or videos (yes this program will convert an avi file into frames for you).",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "start", "start",
         "Only for mode4 exports. (Usage -start=X). Starts the palette off at index X. Useful if you "

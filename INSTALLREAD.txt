@@ -1,4 +1,4 @@
-IMPORTANT THIS IS A DEVELOPMENT RELEASE AND NOT OFFICIALLY AVAILABLE TO THE PUBLIC YET.  THIS SHOULD BE FINISHED SATURDAY.
+Its better if you clone my repo instead of downloading the source in case something is found broken and I fix it.
 
 Optional if you want the gimp mode 4 functionality
 Description:

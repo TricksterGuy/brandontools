@@ -6,9 +6,9 @@
 static void SetUpStyledText(wxStyledTextCtrl* text);
 static void UpdateStyledText(wxStyledTextCtrl* text, const wxString& file);
 static void Export(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool colorkey, wxColor transparent, bool dither, float ditherLevel, int weights[4], bool useGimp, bool hide = false);
+            bool colorkey, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGimp, bool hide = false);
 static wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool isTransparent, wxColor transparent, bool dither, float ditherLevel, int weights[4], bool useGIMP, bool hide);
+            bool isTransparent, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGIMP, bool hide);
 
 
 wxString tempdir;
@@ -193,7 +193,7 @@ void BrandonFrame::OnExportCommand(wxCommandEvent& event)
     weights[2] = popvolume->GetValue();
     weights[3] = error->GetValue();
     wxString command = GetExportCommand(sourceFiles, exportFilename, mode, width->GetValue(), height->GetValue(), startIndex->GetValue(),
-           colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue() / 100.0f, weights, useGimp->IsChecked(), false);
+           colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue(), weights, useGimp->IsChecked(), false);
     wxMessageBox(command, _("Export Command"));
 }
 
@@ -262,7 +262,7 @@ void BrandonFrame::DoExport(const wxString& exportFilename, bool hide)
     weights[2] = popvolume->GetValue();
     weights[3] = error->GetValue();
     Export(sourceFiles, exportFilename, mode, width->GetValue(), height->GetValue(), startIndex->GetValue(),
-           colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue() / 100.0f, weights, useGimp->IsChecked(), hide);
+           colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue(), weights, useGimp->IsChecked(), hide);
 }
 
 /** @brief DoCompile
@@ -444,7 +444,7 @@ void UpdateStyledText(wxStyledTextCtrl* text, const wxString& file)
 }
 
 void Export(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool isTransparent, wxColor transparent, bool dither, float ditherLevel, int weights[4], bool useGIMP, bool hide)
+            bool isTransparent, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGIMP, bool hide)
 {
     wxString execute = GetExportCommand(files, filename, mode, width, height, startIndex, isTransparent,
                                         transparent, dither, ditherLevel, weights, useGIMP, hide);
@@ -459,7 +459,7 @@ void Export(wxArrayString& files, wxString filename, int mode, int width, int he
 }
 
 wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool isTransparent, wxColor transparent, bool dither, float ditherLevel, int weights[4], bool useGIMP, bool hide)
+            bool isTransparent, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGIMP, bool hide)
 {
     wxString pprogram, pmode, phide, pgimp, presize, pstart, ptransparent, pweights, pdither, pditherLevel, pfilenames;
 #ifdef __WXMSW__
@@ -478,7 +478,7 @@ wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int
     ptransparent = isTransparent ? wxString::Format("-transparent=%d,%d,%d", transparent.Red(), transparent.Green(), transparent.Blue()) : "";
     pweights = wxString::Format("-weights=%d,%d,%d,%d", weights[0], weights[1], weights[2], weights[3]);
     pdither = wxString::Format("-dither=%d", dither);
-    pditherLevel = wxString::Format("-dither-level=%f", ditherLevel);
+    pditherLevel = wxString::Format("-dither-level=%d", ditherLevel);
 
     for (unsigned int i = 0; i < files.size(); i++)
         pfilenames += "\"" + files[i] + "\" ";
