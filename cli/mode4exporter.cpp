@@ -22,7 +22,7 @@ void DoMode4(Image image, const ExportParams& params)
     catch (Magick::Exception &error_)
     {
         printf("%s\n", error_.what());
-        printf("Image to GBA (Mode4) failed!");
+        printf("[ERROR] Image to GBA (Mode4) failed!");
         exit(EXIT_FAILURE);
     }
 }
@@ -47,7 +47,7 @@ static void WriteC(Image image, const ExportParams& params)
 
     if (!file_c.good() || !file_h.good())
     {
-        printf("Could not open files for writing\n");
+        printf("[FATAL] Could not open files for writing\n");
         exit(EXIT_FAILURE);
     }
 
