@@ -45,7 +45,7 @@ void DoMode4Multi(std::vector<Magick::Image> images, const ExportParams& params)
     catch (Magick::Exception &error_ )
     {
         printf("%s\n", error_.what());
-        printf("Batch Image to GBA (Mode4) failed!");
+        printf("[ERROR] Batch Image to GBA (Mode4) failed!");
         exit(EXIT_FAILURE);
     }
 }
@@ -66,7 +66,7 @@ static void InitFiles(ofstream& file_c, ofstream& file_h, const ExportParams& pa
 
     if (!file_c.good() || !file_h.good())
     {
-        printf("Could not open files for writing\n");
+        printf("[FATAL] Could not open files for writing\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -119,7 +119,7 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
     // Error check for p_offset
     if (num_colors > 256)
     {
-        printf("Warning: too many colors in palette.\n\
+        printf("[WARNING] too many colors in palette.\n\
                I don't feel like terminating right now\n\
                But I'd think I'd let you know about this.\n\
                Btw you'd best delete the two files it creates.\n");
@@ -177,7 +177,7 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
 
 	    if (images[k].columns() % 2)
 	    {
-                printf("Warning: Image %s width is not a multiple of 2\n\
+                printf("[WARNING] Image %s width is not a multiple of 2\n\
 		    I'm going to continue doing my job since I don't care\n\
 		    if you know what you are doing\n\
 		    But I'd just thought I'd let you know\n", images[k].comment().c_str());
@@ -248,7 +248,7 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
         // If the image width is odd warn them
         if (image.columns() % 2 && k == 0)
         {
-            printf("Warning: Image width is not a multiple of 2\n\
+            printf("[WARNING] Image width is not a multiple of 2\n\
 		    I'm going to continue doing my job since I don't care\n\
 		    if you know what you are doing\n\
 		    But I'd just thought I'd let you know");
@@ -271,7 +271,7 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
         // Error check for p_offset
         if (num_colors > 256)
         {
-            printf("Warning: too many colors in palette.\n\
+            printf("[WARNING] too many colors in palette.\n\
                    I don't feel like terminating right now\n\
                    But I'd think I'd let you know about this.\n\
                    Btw you'd best delete the two files it creates.\n");
