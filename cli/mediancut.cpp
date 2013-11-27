@@ -446,10 +446,10 @@ void MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std:
         unsigned int size = colors.size();
         palette.resize(size);
         std::copy(colors.begin(), colors.end(), palette.begin());
-        printf("[INFO] Not running palette generating algorithm (colors in image < 256)\n");
+        printf("[INFO] Not running image quantization algorithm (image has less than %d colors so those colors will be used)\n", desiredColors);
         return;
     }
-    printf("[INFO] Running palette generating algorithm\n");
+    printf("[INFO] Running image quantization algorithm\n");
     // Volume Queue
     std::priority_queue<Box, std::vector<Box>, BoxCompare> queue0(BoxCompare(0));
     // Population Queue
