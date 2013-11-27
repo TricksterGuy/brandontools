@@ -56,7 +56,7 @@ static void WriteC(Image image, const ExportParams& params)
     // If the image width is odd warn them
     if (image.columns() % 2)
     {
-        printf("Warning: Image width is not a multiple of 2\n\
+        printf("[WARNING] Image width is not a multiple of 2\n\
 		I'm going to continue doing my job since I don't care\n\
 		if you know what you are doing\n\
 		But I'd just thought I'd let you know\n");
@@ -79,7 +79,7 @@ static void WriteC(Image image, const ExportParams& params)
     // Error check for p_offset
     if (num_colors > 256)
     {
-        printf("Warning: too many colors in palette.\n\
+        printf("[WARNING] too many colors in palette.\n\
                I don't feel like terminating right now\n\
                But I'd think I'd let you know about this.\n\
                Btw you'd best delete the two files it creates.\n");
