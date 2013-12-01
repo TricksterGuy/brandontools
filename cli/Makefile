@@ -9,14 +9,14 @@ CC := g++
 CXX := $(CC)
 RM := rm
 INSTALL := install
-FILES := main.o cpercep.o mediancut.o mode3batchexporter.o mode3exporter.o mode4batchexporter.o mode4exporter.o shared.o fortunes.o fortunegen.o
+FILES := main.o cpercep.o mediancut.o mode3batchexporter.o mode3exporter.o mode4batchexporter.o mode4exporter.o mode0exporter16.o mode0exporter256.o shared.o fortunes.o fortunegen.o tile.o
 
 all : $(OUTPUT)
 
 $(OUTPUT) : $(FILES)
 	$(CC) $(LDFLAGS) $^ -o $(OUTPUT) $(LDLIBS)
 
-clean : 
+clean :
 	$(RM) -rf *.o $(OUTPUT)
 
 install : $(OUTPUT)

@@ -99,7 +99,7 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
 
     MedianCut(pixels, params.palette, palette, params.weights);
 
-    std::vector<int>* indexedImages = new std::vector<int>[images.size()];
+    std::vector<unsigned char>* indexedImages = new std::vector<unsigned char>[images.size()];
 
     int location = 0;
     for (unsigned int i = 0; i < images.size(); i++)
@@ -187,7 +187,7 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
         transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
 
         int num_pixels = images[k].rows() * images[k].columns();
-        const std::vector<int>& pixels = indexedImages[k];
+        const std::vector<unsigned char>& pixels = indexedImages[k];
         int size = (num_pixels / 2) + ((num_pixels % 2) != 0);
 
         file_c << "const unsigned short " << name << "[" << size << "] =\n{\n\t";
@@ -264,7 +264,7 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
         delete[] imagePixels;
 
         MedianCut(pixels, params.palette, palette, params.weights);
-        std::vector<int> indexedImage(num_pixels, 1);
+        std::vector<unsigned char> indexedImage(num_pixels, 1);
         RiemersmaDither(pixels.begin(), indexedImage, image.columns(), image.rows(), params.dither, params.dither_level);
 
         unsigned int num_colors = params.offset + palette.size();

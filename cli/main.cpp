@@ -38,6 +38,8 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
     // Modes
     {wxCMD_LINE_SWITCH, "mode0", "mode0", "Export image for use in mode0 (Not implemented do not use)",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_SWITCH, "bpp", "bpp", "Bits per pixel only for use with -mode0 or -sprites (Default 8).",
+        wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "mode3", "mode3", "Export image for use in mode3",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "mode4", "mode4", "Export image for use in mode4",
@@ -118,6 +120,7 @@ bool mode0 = false;
 bool mode3 = false;
 bool mode4 = false;
 bool sprites = false;
+long bpp = 8;
 // Helpful options
 wxString resize = "";
 wxString transparent = "";
@@ -162,6 +165,7 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     mode3 = parser.Found(_("mode3"));
     mode4 = parser.Found(_("mode4"));
     sprites = parser.Found(_("sprites"));
+    parser.Found(_("bpp"), &bpp);
 
     parser.Found(_("resize"), &resize);
     parser.Found(_("transparent"), &transparent);
@@ -218,6 +222,7 @@ bool BrandonToolsApp::Validate()
     eparams.palette = palette_size;
     eparams.fullpalette = full_palette;
     eparams.split = split_palette;
+    eparams.bpp = bpp;
 
     // Mode check
     if (mode0 + mode3 + mode4 + sprites != 1)
@@ -230,6 +235,12 @@ bool BrandonToolsApp::Validate()
     if (mode3) eparams.mode = 3;
     if (mode4) eparams.mode = 4;
     if (sprites) eparams.mode = 7;
+    if (bpp != 4 && bpp != 8 && (mode0 || sprites))
+    {
+        printf("[FATAL] Invalid bpp %ld specified.  Can only set bpp to 4 or 8.\n", bpp);
+        return false;
+    }
+
 
     if (files.size() <= 1)
     {
@@ -489,7 +500,10 @@ bool BrandonToolsApp::DoExportImages()
         switch (eparams.mode)
         {
             case 0:
-                printf("NOT IMPLEMENTED YET SILLY");
+                if (bpp == 4)
+                    DoMode0_4bpp(eparams.images[0], eparams);
+                else if (bpp == 8)
+                    DoMode0_8bpp(eparams.images[0], eparams);
                 return false;
             case 3:
                 DoMode3(eparams.images[0], eparams);

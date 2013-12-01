@@ -181,6 +181,68 @@ Magick::Image ConvertToGBA(Magick::Image image)
     return image;
 }
 
+void QuantizeImage(Magick::Image image, const ExportParams& params, std::vector<unsigned char>& indexedImage)
+{
+    unsigned int num_pixels = image.rows() * image.columns();
+    // If the image width is odd warn them
+    if (image.columns() % 2)
+    {
+        printf("[WARNING] Image width is not a multiple of 2\n\
+		I'm going to continue doing my job since I don't care\n\
+		if you know what you are doing\n\
+		But I'd just thought I'd let you know\n");
+    }
+
+    unsigned char* imagePixels = new unsigned char[num_pixels * 3];
+    std::vector<Color> pixels(num_pixels);
+    palette.clear();
+    image.write(0, 0, image.columns(), image.rows(), "RGB", Magick::CharPixel, imagePixels);
+
+    for (unsigned int i = 0; i < num_pixels; i++)
+        pixels[i].Set(imagePixels[3 * i + 0], imagePixels[3 * i + 1], imagePixels[3 * i + 2]);
+    delete[] imagePixels;
+
+    MedianCut(pixels, params.palette, palette, params.weights);
+    RiemersmaDither(pixels.begin(), indexedImage, image.columns(), image.rows(), params.dither, params.dither_level);
+}
+
+void WritePalette(std::ofstream& file, const ExportParams& params, const std::string& name, unsigned int num_colors)
+{
+    file << "const unsigned short " << name << "_palette" << "[" << num_colors << "] =\n{\n\t";
+    for (unsigned int i = 0; i < num_colors; i++)
+    {
+        unsigned short bytes;
+        if (i < params.offset)
+        {
+            // Well I will put dummy colors in here
+            bytes = 0x8000; // This is black btw.
+        }
+        else
+        {
+            Color color = (i - params.offset) >= palette.size() ? Color(0, 0, 0) : palette[i - params.offset];
+            int x, y, z;
+            color.Get(x, y, z);
+            bytes = x | (y << 5) | (z << 10);
+        }
+
+        WriteData(file, bytes, num_colors, i, 10);
+    }
+    file << "\n};\n\n";
+}
+
+void WriteData(std::ostream& file, unsigned short data, unsigned int size, unsigned int counter, unsigned int items_per_row)
+{
+    char buffer[7];
+    sprintf(buffer, "0x%04x", data);
+    file << buffer;
+    if (counter != size - 1)
+    {
+        file << ",";
+        if (counter % items_per_row == items_per_row - 1)
+            file << "\n\t";
+    }
+}
+
 void split(const std::string& s, char delimiter, std::vector<std::string>& tokens)
 {
     std::stringstream ss(s);
@@ -191,7 +253,8 @@ void split(const std::string& s, char delimiter, std::vector<std::string>& token
 
 struct DitherImage
 {
-    DitherImage(std::vector<Color>::iterator i, std::vector<int>& outImage, int x, int y, int w, int h, int dither, float ditherlevel) : image(i), indexedImage(outImage)
+    DitherImage(std::vector<Color>::iterator i, std::vector<unsigned char>& outImage,
+                int x, int y, int w, int h, int dither, float ditherlevel) : image(i), indexedImage(outImage)
     {
         this->x = x;
         this->y = y;
@@ -201,7 +264,7 @@ struct DitherImage
         this->ditherlevel = ditherlevel;
     }
     std::vector<Color>::iterator image;
-    std::vector<int>& indexedImage;
+    std::vector<unsigned char>& indexedImage;
     int width, height;
     int x, y;
     int dither;
@@ -361,7 +424,8 @@ void Hilbert(DitherImage& image, int level, int direction)
     }
 }
 
-void RiemersmaDither(std::vector<Color>::iterator image, std::vector<int>& indexedImage, int width, int height, int dither, float ditherlevel)
+void RiemersmaDither(std::vector<Color>::iterator image, std::vector<unsigned char>& indexedImage, int width,
+                     int height, int dither, float ditherlevel)
 {
     DitherImage dimage(image, indexedImage, 0, 0, width, height, dither, ditherlevel);
     int size = std::max(width, height);
@@ -387,7 +451,10 @@ std::string Sanitize(const std::string& filename)
     std::stringstream out;
     for (unsigned int i = 0; i < filename.size(); i++)
     {
-        if ((filename[i] >= 'A' && filename[i] <= 'Z') || (filename[i] >= 'a' && filename[i] <= 'z') || (filename[i] >= '0' && filename[i] <= '9') || filename[i] == '_')
+        if ((filename[i] >= 'A' && filename[i] <= 'Z') ||
+            (filename[i] >= 'a' && filename[i] <= 'z') ||
+            (filename[i] >= '0' && filename[i] <= '9') ||
+            filename[i] == '_')
             out.put(filename[i]);
     }
     return out.str();

@@ -5,6 +5,8 @@
 #include "mediancut.hpp"
 #include <Magick++.h>
 #include <cmath>
+#include <iostream>
+#include <fstream>
 
 class Header
 {
@@ -39,9 +41,11 @@ struct ExportParams
     int width;
     int height;
     bool animated;
+    int bpp;
+    bool reduce;
 
     // Palette options
-    int offset;
+    unsigned int offset;
     int weights[4];
     bool dither;
     float dither_level;
@@ -52,6 +56,8 @@ struct ExportParams
 };
 
 
+void DoMode0_4bpp(Magick::Image image, const ExportParams& params);
+void DoMode0_8bpp(Magick::Image image, const ExportParams& params);
 void DoMode3(Magick::Image image, const ExportParams& params);
 void DoMode4(Magick::Image image, const ExportParams& params);
 void DoMode3Multi(std::vector<Magick::Image> images, const ExportParams& params);
@@ -69,13 +75,23 @@ Image height given %d\n"
 
 #define round(x) (((x) < 0) ? ceil((x) - 0.5) : floor((x) + 0.5))
 
+#define TOTAL_TILE_MEMORY_BYTES 65536
+#define SIZE_CBB_BYTES (8192 * 2)
+#define SIZE_SBB_BYTES (1024 * 2)
+#define SIZE_SBB_SHORTS 1024
+
 extern Header header;
 extern std::vector<Color> palette;
 
 int paletteSearch(Color a);
 Magick::Image ConvertToGBA(Magick::Image image);
 void split(const std::string& s, char delimiter, std::vector<std::string>& tokens);
-void RiemersmaDither(std::vector<Color>::iterator image, std::vector<int>& indexedImage, int width, int height, int dither, float ditherlevel);
+void QuantizeImage(Magick::Image image, const ExportParams& params, std::vector<unsigned char>& indexedImage);
+void RiemersmaDither(std::vector<Color>::iterator image, std::vector<unsigned char>& indexedImage, int width,
+                     int height, int dither, float ditherlevel);
+void WritePalette(std::ofstream& file, const ExportParams& params, const std::string& name, unsigned int num_colors);
+void WriteData(std::ostream& file, unsigned short data, unsigned int size, unsigned int counter,
+               unsigned int items_per_row);
 void Chop(std::string& filename);
 std::string Sanitize(const std::string& filename);
 
