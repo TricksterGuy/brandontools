@@ -504,7 +504,7 @@ bool BrandonToolsApp::DoExportImages()
                     DoMode0_4bpp(eparams.images[0], eparams);
                 else if (bpp == 8)
                     DoMode0_8bpp(eparams.images[0], eparams);
-                return false;
+                break;
             case 3:
                 DoMode3(eparams.images[0], eparams);
                 break;
