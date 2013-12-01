@@ -8,17 +8,19 @@
 #define PALETTE_SIZE 16
 #define TILE_SIZE_BYTES_8BPP 64
 #define TILE_SIZE_BYTES_4BPP 32
+#define TILE_SIZE_SHORTS_8BPP 32
+#define TILE_SIZE_SHORTS_4BPP 16
 
 class Tile
 {
 	public:
 		Tile(unsigned char* data_ptr = NULL, unsigned short* palette_ptr = NULL, unsigned short tile_id = 0);
-		Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley);
-		Tile(const std::vector<Color>& Image, int pitch, int tilex, int tiley);
+		Tile(const std::vector<Color>& image, int pitch, int tilex, int tiley);
+		Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp = true);
 		~Tile();
         void Set(unsigned char* data_ptr = NULL, unsigned short* palette_ptr = NULL);
-        void Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley);
-        void Set(const std::vector<Color>& Image, int pitch, int tilex, int tiley);
+        void Set(const std::vector<Color>& image, int pitch, int tilex, int tiley);
+        void Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp = true);
         // Is the tile exactly the same as other
         bool IsEqual(const Tile& other) const;
         // Is the tile the same data as other except flipped.
@@ -27,6 +29,7 @@ class Tile
 		bool operator==(const Tile& other) const;
 
 		unsigned short id;
+		bool is_8bpp;
 	private:
         std::vector<unsigned char> data;
         // unused if bpp == 8.

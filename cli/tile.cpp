@@ -1,4 +1,5 @@
 #include "tile.hpp"
+#include "shared.hpp"
 #include <cstdlib>
 #include <cstring>
 
@@ -10,9 +11,10 @@ Tile::Tile(unsigned char* data_ptr, unsigned short* palette_ptr, unsigned short 
     Set(data_ptr, palette_ptr);
 }
 
-Tile::Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley) : data(TILE_SIZE), palette(PALETTE_SIZE)
+Tile::Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp) :
+    data(TILE_SIZE), palette(PALETTE_SIZE)
 {
-    Set(indexedImage, pitch, tilex, tiley);
+    Set(indexedImage, pitch, tilex, tiley, is_8bpp);
 }
 
 Tile::Tile(const std::vector<Color>& image, int pitch, int tilex, int tiley)
@@ -26,14 +28,19 @@ Tile::~Tile()
 
 void Tile::Set(unsigned char* data_ptr, unsigned short* palette_ptr)
 {
+    is_8bpp = true;
     if (data_ptr)
         data.assign(data_ptr, data_ptr + TILE_SIZE);
     if (palette_ptr)
+    {
+        is_8bpp = false;
         palette.assign(palette_ptr, palette_ptr + PALETTE_SIZE);
+    }
 }
 
-void Tile::Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley)
+void Tile::Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp_data)
 {
+    is_8bpp = is_8bpp_data;
     unsigned char* ptr = data.data();
 
     for (int i = 0; i < 8; i++)
@@ -42,6 +49,7 @@ void Tile::Set(const std::vector<unsigned char>& indexedImage, int pitch, int ti
 
 void Tile::Set(const std::vector<Color>& image, int pitch, int tilex, int tiley)
 {
+    is_8bpp = false;
     std::vector<Color> tile_data(TILE_SIZE);
     for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
@@ -81,24 +89,26 @@ bool Tile::operator<(const Tile& other) const
 
 std::ostream& operator<<(std::ostream& file, const Tile& tile)
 {
-    int spacecounter = 0;
-    char buffer[7];
-    for (unsigned int i = 0; i < 64; i += 2)
+    if (tile.is_8bpp)
     {
-        int px1 = tile.data[i];
-        int px2 = tile.data[i + 1];
-        unsigned short byte = px1 | (px2 << 8);
-        sprintf(buffer, "0x%04x", byte);
-        file << buffer;
-        if (i != 62)
+        for (unsigned int i = 0; i < 32; i++)
         {
-            file << ",";
-            spacecounter++;
-            if (spacecounter == 8)
-            {
-                file << "\n\t";
-                spacecounter = 0;
-            }
+            int px1 = tile.data[2 * i];
+            int px2 = tile.data[2 * i + 1];
+            unsigned short data = px1 | (px2 << 8);
+            WriteData(file, data, 32, i, 8);
+        }
+    }
+    else
+    {
+        for (unsigned int i = 0; i < 16; i++)
+        {
+            int px1 = tile.data[4 * i];
+            int px2 = tile.data[4 * i + 1];
+            int px3 = tile.data[4 * i + 2];
+            int px4 = tile.data[4 * i + 3];
+            unsigned short data = (px4 << 12) | (px3 << 8) | (px2 << 4) | px1;
+            WriteData(file, data, 16, i, 8);
         }
     }
     return file;

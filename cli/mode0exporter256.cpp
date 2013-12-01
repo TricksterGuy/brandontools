@@ -25,9 +25,9 @@ void DoMode0_8bpp(Magick::Image image, const ExportParams& params)
             printf("[ERROR] Map image's dimensions must be divisible by 8. Please fix.\n");
             exit(EXIT_FAILURE);
         }
-        if (image.rows() > 1024 || image.columns() > 1024)
+        if (image.rows() > 512 || image.columns() > 512)
         {
-            printf("[ERROR] Map image dimensions must not be greater than 1024. Please fix.\n");
+            printf("[ERROR] Map image dimensions must not be greater than 512. Please fix.\n");
             exit(EXIT_FAILURE);
         }
         image = ConvertToGBA(image);

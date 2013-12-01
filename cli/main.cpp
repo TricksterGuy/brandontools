@@ -38,7 +38,7 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
     // Modes
     {wxCMD_LINE_SWITCH, "mode0", "mode0", "Export image for use in mode0 (Not implemented do not use)",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
-    {wxCMD_LINE_SWITCH, "bpp", "bpp", "Bits per pixel only for use with -mode0 or -sprites (Default 8).",
+    {wxCMD_LINE_OPTION, "bpp", "bpp", "Bits per pixel only for use with -mode0 or -sprites (Default 8).",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "mode3", "mode3", "Export image for use in mode3",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
