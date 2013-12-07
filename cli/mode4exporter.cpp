@@ -30,26 +30,10 @@ void DoMode4(Image image, const ExportParams& params)
 static void WriteC(Image image, const ExportParams& params)
 {
     ofstream file_c, file_h;
-
-    std::string filename_c = params.name + ".c";
-    std::string filename_h = params.name + ".h";
-    std::string name = params.name;
-    Chop(name);
-    name = Sanitize(name);
+    InitFiles(file_c, file_h, params.name);
+    std::string name = Format(params.name);
     std::string name_cap = name;
-    char buffer[7];
-    int spacecounter = 0;
-
     transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
-
-    file_c.open(filename_c.c_str());
-    file_h.open(filename_h.c_str());
-
-    if (!file_c.good() || !file_h.good())
-    {
-        printf("[FATAL] Could not open files for writing\n");
-        exit(EXIT_FAILURE);
-    }
 
     unsigned int num_pixels = image.rows() * image.columns();
     unsigned int size = (num_pixels / 2) + ((num_pixels % 2) != 0);
@@ -60,57 +44,41 @@ static void WriteC(Image image, const ExportParams& params)
     // Error check for p_offset
     if (num_colors > 256)
     {
-        printf("[WARNING] too many colors in palette.\n\
-               I don't feel like terminating right now\n\
-               But I'd think I'd let you know about this.\n\
-               Btw you'd best delete the two files it creates.\n");
+        printf("[ERROR] too many colors in palette.\n\
+                Found %d colors, offset is %d", num_colors,
+                params.offset);
+        exit(EXIT_FAILURE);
     }
     if (params.fullpalette) num_colors = 256;
+
+    // Sanity check image width and warn
+    if (image.columns() % 2)
+    {
+        printf("[WARNING] Image width is not a multiple of 2\n");
+    }
 
     // Write Headers
     header.Write(file_c);
     header.Write(file_h);
 
-    // Write Palette
-    WritePalette(file_c, params, name, num_colors);
-
-    // Write Image Data
-    file_c << "const unsigned short " << name << "[" << size << "] =\n{\n\t";
-    spacecounter = 0;
-    for (unsigned int i = 0; i < size << 1; i += 2)
-    {
-        // Increase by p_offset here
-        int px1 = indexedImage[i] + params.offset;
-        int px2 = indexedImage[i + 1] + params.offset;
-        unsigned short byte = px1 | (px2 << 8);
-        sprintf(buffer, "0x%04x", byte);
-        file_c << buffer;
-        if (i != (size - 1) << 1)
-        {
-            file_c << ",";
-            spacecounter++;
-            if (spacecounter == 10)
-            {
-                file_c << "\n\t";
-                spacecounter = 0;
-            }
-        }
-    }
-    file_c << "\n};\n";
-
-    file_h << "#ifndef " << name_cap << "_BITMAP_H\n";
-    file_h << "#define " << name_cap << "_BITMAP_H\n\n";
-    file_h << "extern const unsigned short " << name << "[" << size << "];\n";
-    file_h << "extern const unsigned short " << name << "_palette[" << num_colors << "];\n";
-    file_h << "#define " << name_cap << "_WIDTH " << image.columns() << "\n";
-    file_h << "#define " << name_cap << "_HEIGHT " << image.rows() << "\n";
-    file_h << "#define " << name_cap << "_PALETTE_SIZE " << num_colors << "\n";
-    if (params.offset == 0)
-        file_h << "\n";
-    else
-        file_h << "#define " << name_cap << "_PALETTE_OFFSET " << params.offset << "\n\n";
-    file_h << "#endif";
-
+    // Write Palette and Image Data
+    WriteShortArray(file_c, name, "_palette", palette.data(), num_colors, GetPaletteEntry, 10, &params.offset);
+    WriteNewLine(file_c);
+    WriteShortArray(file_c, name, "", indexedImage.data(), size, GetIndexedEntry, 10, &params.offset);
+    WriteNewLine(file_c);
     file_c.close();
+
+    // Write Header file
+    WriteHeaderGuard(file_h, name_cap, "_BITMAP_H");
+    WriteExternShortArray(file_h, name, "_palette", num_colors);
+    WriteExternShortArray(file_h, name, "", size);
+    WriteNewLine(file_h);
+    WriteDefine(file_h, name_cap, "_WIDTH", image.columns());
+    WriteDefine(file_h, name_cap, "_HEIGHT", image.rows());
+    if (params.offset)
+        WriteDefine(file_h, name_cap, "_PALETTE_OFFSET", params.offset);
+    WriteDefine(file_h, name_cap, "_PALETTE_SIZE", num_colors);
+    WriteNewLine(file_h);
+    WriteEndHeaderGuard(file_h);
     file_h.close();
 }

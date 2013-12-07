@@ -91,24 +91,24 @@ std::ostream& operator<<(std::ostream& file, const Tile& tile)
 {
     if (tile.is_8bpp)
     {
-        for (unsigned int i = 0; i < 32; i++)
+        for (unsigned int i = 0; i < TILE_SIZE_SHORTS_8BPP; i++)
         {
             int px1 = tile.data[2 * i];
             int px2 = tile.data[2 * i + 1];
             unsigned short data = px1 | (px2 << 8);
-            WriteData(file, data, 32, i, 8);
+            WriteElement(file, data, TILE_SIZE_SHORTS_8BPP, i, 8);
         }
     }
     else
     {
-        for (unsigned int i = 0; i < 16; i++)
+        for (unsigned int i = 0; i < TILE_SIZE_SHORTS_4BPP; i++)
         {
             int px1 = tile.data[4 * i];
             int px2 = tile.data[4 * i + 1];
             int px3 = tile.data[4 * i + 2];
             int px4 = tile.data[4 * i + 3];
             unsigned short data = (px4 << 12) | (px3 << 8) | (px2 << 4) | px1;
-            WriteData(file, data, 16, i, 8);
+            WriteElement(file, data, TILE_SIZE_SHORTS_4BPP, i, 8);
         }
     }
     return file;

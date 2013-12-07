@@ -3,6 +3,7 @@
 
 #include "version.h"
 #include "mediancut.hpp"
+#include "fileutils.hpp"
 #include <Magick++.h>
 #include <cmath>
 #include <iostream>
@@ -89,10 +90,13 @@ void split(const std::string& s, char delimiter, std::vector<std::string>& token
 void QuantizeImage(Magick::Image image, const ExportParams& params, std::vector<unsigned char>& indexedImage);
 void RiemersmaDither(std::vector<Color>::iterator image, std::vector<unsigned char>& indexedImage, int width,
                      int height, int dither, float ditherlevel);
-void WritePalette(std::ofstream& file, const ExportParams& params, const std::string& name, unsigned int num_colors);
-void WriteData(std::ostream& file, unsigned short data, unsigned int size, unsigned int counter,
-               unsigned int items_per_row);
 void Chop(std::string& filename);
 std::string Sanitize(const std::string& filename);
+std::string Format(const std::string& filename);
+
+unsigned short PackPixels(const void* pixelArray, unsigned int i, const void* unused);
+unsigned short GetPaletteEntry(const void* paletteArray, unsigned int i, const void* num_colors);
+unsigned short GetIndexedEntry(const void* indicesArray, unsigned int i, const void* offset_ptr);
+std::string getAnimFrameName(const void* stringArray, unsigned int i, const void* unused);
 
 #endif

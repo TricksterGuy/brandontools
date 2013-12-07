@@ -61,7 +61,7 @@ static void WriteC(Image image, const ExportParams& params)
     // Error check for p_offset
     if (num_colors > 256)
     {
-        printf("[ERROR] too many colors in palette. Got %d.\n", num_colors);
+        printf("[ERROR] too many colors in palette. Got %u.\n", num_colors);
         exit(EXIT_FAILURE);
     }
     if (params.fullpalette) num_colors = 256;
@@ -115,7 +115,7 @@ static void WriteC(Image image, const ExportParams& params)
     // Delicious infos
     int cbbs = tiles.size() * TILE_SIZE_BYTES_4BPP / SIZE_CBB_BYTES;
     int sbbs = (int) ceil(tiles.size() * TILE_SIZE_BYTES_4BPP % SIZE_CBB_BYTES / ((double)SIZE_SBB_BYTES));
-    printf("[INFO] Tiles found %d Map info size %d (shorts) Exported map size %d (shorts).\n",
+    printf("[INFO] Tiles found %zu Map info size %d (shorts) Exported map size %d (shorts).\n",
            tiles.size(), totalTiles, num_blocks * SIZE_SBB_SHORTS);
     printf("[INFO] Tiles uses %d charblocks and %d screenblocks, Map uses %d screenblocks.\n",
            cbbs, sbbs, num_blocks);
@@ -163,7 +163,7 @@ static void WriteC(Image image, const ExportParams& params)
     file_h << "#endif";
 
     // Write Palette Data
-    WritePalette(file_c, params, name, num_colors);
+    WriteShortArray(file_c, name, "_palette", palette.data(), num_colors, GetPaletteEntry, 10, &params.offset);
     // Write Map Data
     WriteMap(file_c, params, name, mapData, tilesX, tilesY, type);
     file_c << "\n";
@@ -200,7 +200,7 @@ void WriteMap(ostream& file, const ExportParams& params, const std::string& name
                 else
                     tile_id = mapData[(y + sy) * width + (x + sx)];
                 // Write it.
-                WriteData(file, tile_id, num_blocks * SIZE_SBB_SHORTS, (y + sy) * width + (x + sx), 8);
+                WriteElement(file, tile_id, num_blocks * SIZE_SBB_SHORTS, (y + sy) * width + (x + sx), 8);
             }
         }
     }

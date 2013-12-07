@@ -206,41 +206,40 @@ void QuantizeImage(Magick::Image image, const ExportParams& params, std::vector<
     RiemersmaDither(pixels.begin(), indexedImage, image.columns(), image.rows(), params.dither, params.dither_level);
 }
 
-void WritePalette(std::ofstream& file, const ExportParams& params, const std::string& name, unsigned int num_colors)
+unsigned short PackPixels(const void* pixelArray, unsigned int i, const void* unused)
 {
-    file << "const unsigned short " << name << "_palette" << "[" << num_colors << "] =\n{\n\t";
-    for (unsigned int i = 0; i < num_colors; i++)
-    {
-        unsigned short bytes;
-        if (i < params.offset)
-        {
-            // Well I will put dummy colors in here
-            bytes = 0x8000; // This is black btw.
-        }
-        else
-        {
-            Color color = (i - params.offset) >= palette.size() ? Color(0, 0, 0) : palette[i - params.offset];
-            int x, y, z;
-            color.Get(x, y, z);
-            bytes = x | (y << 5) | (z << 10);
-        }
-
-        WriteData(file, bytes, num_colors, i, 10);
-    }
-    file << "\n};\n\n";
+    // pixels[3*i] = r, pixels[3*i+1] = g, pixels[3*i+2] = b
+    const char* pixels = static_cast<const char*>(pixelArray);
+    return pixels[3 * i] | (pixels[3 * i + 1] << 5) | (pixels[3 * i + 2] << 10);
 }
 
-void WriteData(std::ostream& file, unsigned short data, unsigned int size, unsigned int counter, unsigned int items_per_row)
+unsigned short GetPaletteEntry(const void* paletteArray, unsigned int i, const void* offset_ptr)
 {
-    char buffer[7];
-    sprintf(buffer, "0x%04x", data);
-    file << buffer;
-    if (counter != size - 1)
-    {
-        file << ",";
-        if (counter % items_per_row == items_per_row - 1)
-            file << "\n\t";
-    }
+    unsigned int p_offset = *static_cast<const unsigned int*>(offset_ptr);
+    // Return a dummy color (black) for the first offset colors.
+    if (i < p_offset)
+        return 0x8000;
+
+    const Color* palette = static_cast<const Color*>(paletteArray);
+    int x, y, z;
+    const Color& color = palette[i - p_offset];
+    color.Get(x, y, z);
+    return x | (y << 5) | (z << 10);
+}
+
+unsigned short GetIndexedEntry(const void* indicesArray, unsigned int i, const void* offset_ptr)
+{
+    unsigned int p_offset = *static_cast<const unsigned int*>(offset_ptr);
+    const unsigned char* indices = static_cast<const unsigned char*>(indicesArray);
+    int px1 = indices[2 * i] + p_offset;
+    int px2 = indices[2 * i + 1] + p_offset;
+    return px1 | (px2 << 8);
+}
+
+std::string getAnimFrameName(const void* stringArray, unsigned int i, const void* unused)
+{
+    const std::string* strings = static_cast<const std::string*>(stringArray);
+    return strings[i];
 }
 
 void split(const std::string& s, char delimiter, std::vector<std::string>& tokens)
@@ -458,4 +457,11 @@ std::string Sanitize(const std::string& filename)
             out.put(filename[i]);
     }
     return out.str();
+}
+
+std::string Format(const std::string& file)
+{
+    std::string filename = file;
+    Chop(filename);
+    return Sanitize(filename);
 }

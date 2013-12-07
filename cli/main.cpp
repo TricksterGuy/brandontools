@@ -259,7 +259,7 @@ bool BrandonToolsApp::Validate()
         split(resize.ToStdString(), ',', tokens);
         if (tokens.size() != 2)
         {
-            printf("[FATAL] error parsing -resize only need 2 comma separated values, %d given\n.", tokens.size());
+            printf("[FATAL] error parsing -resize only need 2 comma separated values, %zd given\n.", tokens.size());
             return false;
         }
         eparams.width = atoi(tokens[0].c_str());

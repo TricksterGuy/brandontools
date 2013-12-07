@@ -60,7 +60,7 @@ static void WriteC(Image image, const ExportParams& params)
     // Error check for p_offset
     if (num_colors > 256)
     {
-        printf("[ERROR] too many colors in palette. Got %d.\n", num_colors);
+        printf("[ERROR] too many colors in palette. Got %u.\n", num_colors);
         exit(EXIT_FAILURE);
     }
     if (params.fullpalette) num_colors = 256;
@@ -108,7 +108,7 @@ static void WriteC(Image image, const ExportParams& params)
     // Delicious infos
     int cbbs = tiles.size() * TILE_SIZE_BYTES_8BPP / SIZE_CBB_BYTES;
     int sbbs = (int) ceil(tiles.size() * TILE_SIZE_BYTES_8BPP % SIZE_CBB_BYTES / ((double)SIZE_SBB_BYTES));
-    printf("[INFO] Tiles found %d Map info size %d (shorts) Exported map size %d (shorts).\n",
+    printf("[INFO] Tiles found %zu Map info size %d (shorts) Exported map size %d (shorts).\n",
            tiles.size(), totalTiles, num_blocks * SIZE_SBB_SHORTS);
     printf("[INFO] Tiles uses %d charblocks and %d screenblocks, Map uses %d screenblocks.\n",
            cbbs, sbbs, num_blocks);
@@ -116,47 +116,37 @@ static void WriteC(Image image, const ExportParams& params)
            memory_b / ((double)SIZE_CBB_BYTES), (int) ceil(memory_b / ((double)SIZE_SBB_BYTES)), memory_b);
 
     ofstream file_c, file_h;
-    std::string filename_c = params.name + ".c";
-    std::string filename_h = params.name + ".h";
-    std::string name = params.name;
-    Chop(name);
-    name = Sanitize(name);
+    InitFiles(file_c, file_h, params.name);
+    std::string name = Format(params.name);
     std::string name_cap = name;
-
     transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
-
-    file_c.open(filename_c.c_str());
-    file_h.open(filename_h.c_str());
-
-    if (!file_c.good() || !file_h.good())
-    {
-        printf("[FATAL] Could not open files for writing\n");
-        exit(EXIT_FAILURE);
-    }
 
     // Write Header information
     header.Write(file_c);
     header.Write(file_h);
 
     // Write Header file
-    file_h << "#ifndef " << name_cap << "_TILEMAP_H\n";
-    file_h << "#define " << name_cap << "_TILEMAP_H\n\n";
-    file_h << "extern const unsigned short " << name << "_palette[" << num_colors << "];\n";
-    file_h << "extern const unsigned short " << name << "_map[" << num_blocks * 32 * 32 << "];\n";
-    file_h << "extern const unsigned short " << name << "_tiles[" << tiles.size() * 32 << "];\n\n";
-    file_h << "#define " << name_cap << "_PALETTE_SIZE " << num_colors << "\n";
-    file_h << "#define " << name_cap << "_PALETTE_TYPE 1 << 7\n";
+    WriteHeaderGuard(file_h, name_cap, "_TILEMAP_H");
+    WriteExternShortArray(file_h, name, "_palette", num_colors);
     if (params.offset)
-        file_h << "#define " << name_cap << "_PALETTE_OFFSET " << params.offset << "\n";
-    file_h << "#define " << name_cap << "_WIDTH " << image.columns() / 8 << "\n";
-    file_h << "#define " << name_cap << "_HEIGHT " << image.rows() / 8 << "\n";
-    file_h << "#define " << name_cap << "_MAP_SIZE " << num_blocks * 32 * 32 << "\n";
-    file_h << "#define " << name_cap << "_MAP_TYPE " << type << " << 14" << "\n";
-    file_h << "#define " << name_cap << "_TILES " << tiles.size() * 32 << "\n\n";
-    file_h << "#endif";
+        WriteDefine(file_h, name_cap, "_PALETTE_OFFSET ", params.offset);
+    WriteDefine(file_h, name_cap, "_PALETTE_SIZE", num_colors);
+    WriteDefine(file_h, name_cap, "_PALETTE_TYPE", "(1 << 7)");
+    WriteNewLine(file_h);
+
+    WriteExternShortArray(file_h, name, "_map", num_blocks * SIZE_SBB_SHORTS);
+    WriteDefine(file_h, name_cap, "_WIDTH", image.columns() / 8);
+    WriteDefine(file_h, name_cap, "_HEIGHT", image.rows() / 8);
+    WriteDefine(file_h, name_cap, "_MAP_SIZE", num_blocks * SIZE_SBB_SHORTS);
+    WriteDefine(file_h, name_cap, "_MAP_TYPE", type << 14);
+    WriteNewLine(file_h);
+
+    WriteExternShortArray(file_h, name, "_tiles", tiles.size() * TILE_SIZE_SHORTS_8BPP);
+    WriteDefine(file_h, name_cap, "_TILES", tiles.size() * TILE_SIZE_SHORTS_8BPP);
+    WriteEndHeaderGuard(file_h);
 
     // Write Palette Data
-    WritePalette(file_c, params, name, num_colors);
+    WriteShortArray(file_c, name, "_palette", palette.data(), num_colors, GetPaletteEntry, 10, &params.offset);
     // Write Map Data
     WriteMap(file_c, params, name, mapData, tilesX, tilesY, type);
     file_c << "\n";
@@ -193,7 +183,7 @@ void WriteMap(ostream& file, const ExportParams& params, const std::string& name
                 else
                     tile_id = mapData[(y + sy) * width + (x + sx)];
                 // Write it.
-                WriteData(file, tile_id, num_blocks * 32 * 32, (y + sy) * width + (x + sx), 8);
+                WriteElement(file, tile_id, num_blocks * 32 * 32, (y + sy) * width + (x + sx), 8);
             }
         }
     }
