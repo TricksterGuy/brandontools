@@ -4,6 +4,7 @@
 #include <fstream>
 #include "shared.hpp"
 #include "tile.hpp"
+#include "reductionhelper.hpp"
 
 using namespace Magick;
 using namespace std;
@@ -12,8 +13,6 @@ static void WriteC(Image image, const ExportParams& params);
 static void WriteMap(ostream& file, const ExportParams& params, const std::string& name,
                      const std::vector<unsigned short>& mapData, unsigned int width,
                      unsigned int height, int type);
-static void WriteTiles(ostream& file, const ExportParams& params, const std::string& name,
-                       const std::vector<Tile>& tiles);
 
 void DoMode0_8bpp(Magick::Image image, const ExportParams& params)
 {
@@ -186,19 +185,6 @@ void WriteMap(ostream& file, const ExportParams& params, const std::string& name
                 WriteElement(file, tile_id, num_blocks * 32 * 32, (y + sy) * width + (x + sx), 8);
             }
         }
-    }
-    file << "\n};\n";
-}
-
-void WriteTiles(ostream& file, const ExportParams& params, const std::string& name,
-                const std::vector<Tile>& tiles)
-{
-    file << "const unsigned short " << name << "_tiles[" << tiles.size() * 32 << "] =\n{\n\t";
-    for (unsigned int i = 0; i < tiles.size(); i++)
-    {
-        file << tiles[i];
-        if (i != tiles.size() - 1)
-            file << ",\n\t";
     }
     file << "\n};\n";
 }

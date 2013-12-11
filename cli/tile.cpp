@@ -11,15 +11,15 @@ Tile::Tile(unsigned char* data_ptr, unsigned short* palette_ptr, unsigned short 
     Set(data_ptr, palette_ptr);
 }
 
-Tile::Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp) :
+Tile::Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, int border, bool is_8bpp) :
     data(TILE_SIZE), palette(PALETTE_SIZE)
 {
-    Set(indexedImage, pitch, tilex, tiley, is_8bpp);
+    Set(indexedImage, pitch, tilex, tiley, border, is_8bpp);
 }
 
-Tile::Tile(const std::vector<Color>& image, int pitch, int tilex, int tiley)
+Tile::Tile(const std::vector<Color>& image, int pitch, int tilex, int tiley, int border)
 {
-    Set(image, pitch, tilex, tiley);
+    Set(image, pitch, tilex, tiley, border);
 }
 
 Tile::~Tile()
@@ -38,22 +38,22 @@ void Tile::Set(unsigned char* data_ptr, unsigned short* palette_ptr)
     }
 }
 
-void Tile::Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp_data)
+void Tile::Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, int border, bool is_8bpp_data)
 {
     is_8bpp = is_8bpp_data;
     unsigned char* ptr = data.data();
 
     for (int i = 0; i < 8; i++)
-        memcpy(ptr + i * 8, indexedImage.data() + (tiley * 8 + i) * pitch + tilex * 8, 8);
+        memcpy(ptr + i * 8, indexedImage.data() + (tiley * (8+border) + i) * pitch + tilex * (8+border), 8);
 }
 
-void Tile::Set(const std::vector<Color>& image, int pitch, int tilex, int tiley)
+void Tile::Set(const std::vector<Color>& image, int pitch, int tilex, int tiley, int border)
 {
     is_8bpp = false;
     std::vector<Color> tile_data(TILE_SIZE);
     for (int i = 0; i < 8; i++)
         for (int j = 0; j < 8; j++)
-            tile_data[i * 8 + j] = image[(tiley * 8 + i) * pitch + tilex * 8 + j];
+            tile_data[i * 8 + j] = image[(tiley * (8+border) + i) * pitch + tilex * (8+border) + j];
 }
 
 bool Tile::IsEqual(const Tile& other) const

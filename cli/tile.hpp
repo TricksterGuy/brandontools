@@ -15,12 +15,12 @@ class Tile
 {
 	public:
 		Tile(unsigned char* data_ptr = NULL, unsigned short* palette_ptr = NULL, unsigned short tile_id = 0);
-		Tile(const std::vector<Color>& image, int pitch, int tilex, int tiley);
-		Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp = true);
+		Tile(const std::vector<Color>& image, int pitch, int tilex, int tiley, int border = 0);
+		Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, int border = 0, bool is_8bpp = true);
 		~Tile();
         void Set(unsigned char* data_ptr = NULL, unsigned short* palette_ptr = NULL);
-        void Set(const std::vector<Color>& image, int pitch, int tilex, int tiley);
-        void Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, bool is_8bpp = true);
+        void Set(const std::vector<Color>& image, int pitch, int tilex, int tiley, int border = 0);
+        void Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, int border = 0, bool is_8bpp = true);
         // Is the tile exactly the same as other
         bool IsEqual(const Tile& other) const;
         // Is the tile the same data as other except flipped.

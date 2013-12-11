@@ -2,12 +2,12 @@
 #define SHARED_HPP
 
 #include "version.h"
-#include "mediancut.hpp"
 #include "fileutils.hpp"
 #include <Magick++.h>
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 class Header
 {
@@ -20,9 +20,11 @@ class Header
         void SetInvocation(const std::string& invo);
         void SetTransparent(int p_color);
         void SetMode(int mode);
+        void SetTilesets(const std::vector<std::string>& tilesets);
     private:
         std::vector<std::string> lines;
         std::vector<std::string> images;
+        std::vector<std::string> tilesets;
         std::string invocation;
         int p_color;
         int mode;
@@ -36,6 +38,7 @@ struct ExportParams
     std::vector<std::string> files;
     std::vector<std::string> names; // In batch names of the arrays for the images.
     std::vector<Magick::Image> images;
+    std::vector<Magick::Image> tileset;
 
     // Optional stuff
     int transparent_color;
@@ -54,11 +57,17 @@ struct ExportParams
     bool fullpalette;
     bool split;
 
+    // Tile/map stuff
+    int split_sbb;
+    int border;
 };
 
+extern Header header;
 
 void DoMode0_4bpp(Magick::Image image, const ExportParams& params);
 void DoMode0_8bpp(Magick::Image image, const ExportParams& params);
+void DoTilesetExport(std::vector<Magick::Image> images, const ExportParams& params);
+void DoMapExport(Magick::Image, const ExportParams& params);
 void DoMode3(Magick::Image image, const ExportParams& params);
 void DoMode4(Magick::Image image, const ExportParams& params);
 void DoMode3Multi(std::vector<Magick::Image> images, const ExportParams& params);
@@ -76,27 +85,10 @@ Image height given %d\n"
 
 #define round(x) (((x) < 0) ? ceil((x) - 0.5) : floor((x) + 0.5))
 
-#define TOTAL_TILE_MEMORY_BYTES 65536
-#define SIZE_CBB_BYTES (8192 * 2)
-#define SIZE_SBB_BYTES (1024 * 2)
-#define SIZE_SBB_SHORTS 1024
-
-extern Header header;
-extern std::vector<Color> palette;
-
-int paletteSearch(Color a);
-Magick::Image ConvertToGBA(Magick::Image image);
+std::string ToUpper(const std::string& str);
 void split(const std::string& s, char delimiter, std::vector<std::string>& tokens);
-void QuantizeImage(Magick::Image image, const ExportParams& params, std::vector<unsigned char>& indexedImage);
-void RiemersmaDither(std::vector<Color>::iterator image, std::vector<unsigned char>& indexedImage, int width,
-                     int height, int dither, float ditherlevel);
 void Chop(std::string& filename);
 std::string Sanitize(const std::string& filename);
 std::string Format(const std::string& filename);
-
-unsigned short PackPixels(const void* pixelArray, unsigned int i, const void* unused);
-unsigned short GetPaletteEntry(const void* paletteArray, unsigned int i, const void* num_colors);
-unsigned short GetIndexedEntry(const void* indicesArray, unsigned int i, const void* offset_ptr);
-std::string getAnimFrameName(const void* stringArray, unsigned int i, const void* unused);
 
 #endif

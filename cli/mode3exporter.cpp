@@ -4,6 +4,7 @@
 #include <fstream>
 #include "shared.hpp"
 #include "fileutils.hpp"
+#include "reductionhelper.hpp"
 
 using namespace Magick;
 using namespace std;
@@ -15,7 +16,6 @@ void DoMode3(Magick::Image image, const ExportParams& params)
     header.SetMode(3);
     try
     {
-        image = ConvertToGBA(image);
         WriteC(image, params);
     }
     catch (Exception &error_)
@@ -26,14 +26,15 @@ void DoMode3(Magick::Image image, const ExportParams& params)
     }
 }
 
-static void WriteC(Magick::Image image, const ExportParams& params)
+void WriteC(Magick::Image image, const ExportParams& params)
 {
     ofstream file_c, file_h;
     InitFiles(file_c, file_h, params.name);
 
     std::string name = Format(params.name);
-    std::string name_cap = name;
-    transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
+    std::string name_cap = ToUpper(name);
+
+    image = ConvertToGBA(image);
 
     // Get Image Data
     int num_pixels = image.rows() * image.columns();
@@ -43,6 +44,7 @@ static void WriteC(Magick::Image image, const ExportParams& params)
     // Write out .c file
     header.Write(file_c);
     WriteShortArray(file_c, name, "", pixels, num_pixels, PackPixels, 10);
+    WriteNewLine(file_c);
     delete[] pixels;
     file_c.close();
 
@@ -61,5 +63,6 @@ static void WriteC(Magick::Image image, const ExportParams& params)
     WriteDefine(file_h, name_cap, "_HEIGHT", image.rows());
     WriteNewLine(file_h);
     WriteEndHeaderGuard(file_h);
+    WriteNewLine(file_h);
     file_h.close();
 }

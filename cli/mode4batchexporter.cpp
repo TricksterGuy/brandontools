@@ -6,10 +6,12 @@
 #include <vector>
 #include <cassert>
 #include "shared.hpp"
+#include "reductionhelper.hpp"
 
-using Magick::Image;
+using namespace Magick;
 using namespace std;
 
+static void WriteC(std::vector<Magick::Image> images, const ExportParams& params);
 static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Image> images, const ExportParams& params);
 static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick::Image> images, const ExportParams& params);
 
@@ -19,25 +21,7 @@ void DoMode4Multi(std::vector<Magick::Image> images, const ExportParams& params)
     header.SetMode(4);
     try
     {
-        ofstream file_c, file_h;
-        InitFiles(file_c, file_h, params.name);
-        std::string name = Format(params.name);
-
-        /* The trick is to compose the images and get a global palette */
-        for (unsigned int i = 0; i < images.size(); i++)
-            images[i] = ConvertToGBA(images[i]);
-
-        // -split allows you to generate multiple palettes for each image given
-        // useful for videos.
-	    if (params.split)
-    		WriteSeparate(file_c, file_h, images, params);
-        else
-            WriteAll(file_c, file_h, images, params);
-
-        WriteEndHeaderGuard(file_h);
-
-        file_c.close();
-        file_h.close();
+        WriteC(images, params);
     }
     catch (Magick::Exception &error_ )
     {
@@ -47,44 +31,36 @@ void DoMode4Multi(std::vector<Magick::Image> images, const ExportParams& params)
     }
 }
 
-static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Image> images, const ExportParams& params)
+void WriteC(std::vector<Magick::Image> images, const ExportParams& params)
 {
-    std::string filename_cap = Format(params.name);
-    transform(filename_cap.begin(), filename_cap.end(), filename_cap.begin(), (int(*)(int)) std::toupper);
+    ofstream file_c, file_h;
+    InitFiles(file_c, file_h, params.name);
+    std::string name = Format(params.name);
 
-    // TODO make this more memory efficient.
-    unsigned int total_pixels = 0;
-    for (unsigned int i = 0; i < images.size(); i++)
-        total_pixels += images[i].rows() * images[i].columns();
-    unsigned char* all_pixels = new unsigned char[total_pixels * 3];
-    unsigned char* current = all_pixels;
+    /* The trick is to compose the images and get a global palette */
 
-    for (unsigned int i = 0; i < images.size(); i++)
-    {
-        images[i].write(0, 0, images[i].columns(), images[i].rows(), "RGB", Magick::CharPixel, current);
-        current += images[i].columns() * images[i].rows() * 3;
-    }
-    std::vector<Color> pixels(total_pixels);
-    for (unsigned int i = 0; i < total_pixels; i++)
-        pixels[i].Set(all_pixels[3 * i + 0], all_pixels[3 * i + 1], all_pixels[3 * i + 2]);
-    delete[] all_pixels;
-    MedianCut(pixels, params.palette, palette, params.weights);
+    // -split allows you to generate multiple palettes for each image given
+    // useful for videos.
+    if (params.split)
+        WriteSeparate(file_c, file_h, images, params);
+    else
+        WriteAll(file_c, file_h, images, params);
 
-    std::vector<unsigned char>* indexedImages = new std::vector<unsigned char>[images.size()];
 
-    // Dither and form all images
-    int location = 0;
-    for (unsigned int i = 0; i < images.size(); i++)
-    {
-        indexedImages[i].resize(images[i].rows() * images[i].columns(), 1);
-        RiemersmaDither(pixels.begin() + location, indexedImages[i], images[i].columns(), images[i].rows(), params.dither, params.dither_level);
-        location += images[i].columns() * images[i].rows();
-    }
+    WriteEndHeaderGuard(file_h);
+    WriteNewLine(file_h);
+    file_h.close();
 
-    // This has to happen after you form the palette
-    header.Write(file_c);
-    header.Write(file_h);
-    WriteHeaderGuard(file_h, filename_cap, "_BITMAP_H");
+    WriteNewLine(file_c);
+    file_c.close();
+}
+
+void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Image> images, const ExportParams& params)
+{
+    std::string filename_cap = ToUpper(Format(params.name));
+
+    std::vector<IndexedImage> indexedImages(images.size());
+    FormPaletteAndIndexedImages(images, params, indexedImages);
 
     // Error check for p_offset
     unsigned int num_colors = palette.size() + params.offset;
@@ -97,11 +73,15 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
     }
     if (params.fullpalette) num_colors = 256;
 
+    // This has to happen after you form the palette
+    header.Write(file_h);
+    WriteHeaderGuard(file_h, filename_cap, "_BITMAP_H");
     WriteExternShortArray(file_h, params.name, "_palette", num_colors);
     WriteDefine(file_h, filename_cap, "_PALETTE_OFFSET", params.offset);
     WriteDefine(file_h, filename_cap, "_PALETTE_SIZE", num_colors);
     WriteNewLine(file_h);
 
+    header.Write(file_c);
     WriteShortArray(file_c, params.name, "_palette", palette.data(), num_colors, GetPaletteEntry, 10, &params.offset);
     WriteNewLine(file_c);
 
@@ -121,10 +101,9 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
     for (unsigned int k = 0; k < images.size(); k++)
     {
         std::string name = params.names[k];
-        std::string name_cap = name;
-        transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
+        std::string name_cap = ToUpper(name);
 
-	    if (images[k].columns() % 2)
+        if (images[k].columns() % 2)
             printf("[WARNING] Image %s width is not a multiple of 2\n", name.c_str());
 
         int num_pixels = images[k].rows() * images[k].columns();
@@ -139,48 +118,31 @@ static void WriteAll(ofstream& file_c, ofstream& file_h, std::vector<Magick::Ima
         WriteDefine(file_h, name_cap, "_HEIGHT", images[k].rows());
         WriteNewLine(file_h);
     }
-    delete[] indexedImages;
 }
 
-static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick::Image> images, const ExportParams& params)
+void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick::Image> images, const ExportParams& params)
 {
-    std::string filename_cap = Format(params.name);
-    transform(filename_cap.begin(), filename_cap.end(), filename_cap.begin(), (int(*)(int)) std::toupper);
+    std::string filename_cap = ToUpper(Format(params.name));
 
     for (unsigned int k = 0; k < images.size(); k++)
     {
         palette.clear();
+        std::string name = params.names[k];
+        std::string name_cap = ToUpper(name);
 
         Image& image = images[k];
-        std::string name = params.names[k];
-        std::string name_cap = name;
-        transform(name_cap.begin(), name_cap.end(), name_cap.begin(), (int(*)(int)) std::toupper);
-
         unsigned int num_pixels = image.rows() * image.columns();
         int size = (num_pixels / 2) + ((num_pixels % 2) != 0);
-        // If the image width is odd warn them
-        if (image.columns() % 2 && k == 0)
-            printf("[WARNING] Image width is not a multiple of 2\n");
+        IndexedImage indexedImage(num_pixels, 1);
 
-        unsigned char* imagePixels = new unsigned char[num_pixels * 3];
-        image.write(0, 0, image.columns(), image.rows(), "RGB", Magick::CharPixel, imagePixels);
-
-        std::vector<Color> pixels(num_pixels);
-        for (unsigned int i = 0; i < num_pixels; i++)
-            pixels[i].Set(imagePixels[3 * i + 0], imagePixels[3 * i + 1], imagePixels[3 * i + 2]);
-        delete[] imagePixels;
-        MedianCut(pixels, params.palette, palette, params.weights);
-
-        std::vector<unsigned char> indexedImage(num_pixels, 1);
-        RiemersmaDither(pixels.begin(), indexedImage, image.columns(), image.rows(), params.dither, params.dither_level);
-
+        QuantizeImage(image, params, indexedImage);
         unsigned int num_colors = params.offset + palette.size();
         // Error check for p_offset
         if (num_colors > 256)
         {
             printf("[ERROR] too many colors in palette.\n\
                     Found %d colors, offset is %d", num_colors,
-                    params.offset);
+                   params.offset);
             exit(EXIT_FAILURE);
         }
         if (params.fullpalette) num_colors = 256;
@@ -189,6 +151,7 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
         if (k == 0)
         {
             header.Write(file_c);
+
             header.Write(file_h);
             WriteHeaderGuard(file_h, filename_cap, "_BITMAP_H");
             WriteDefine(file_h, filename_cap, "_PALETTE_OFFSET", params.offset);
@@ -210,11 +173,8 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
         // Write palette
         WriteShortArray(file_c, name, "_palette", palette.data(), num_colors, GetPaletteEntry, 10, &params.offset);
         WriteNewLine(file_c);
-
-        // Write Palette Entries
         WriteShortArray(file_c, name, "", indexedImage.data(), size, GetIndexedEntry, 10, &params.offset);
         WriteNewLine(file_c);
-
 
         WriteExternShortArray(file_h, name, "_palette", num_colors);
         WriteDefine(file_h, name_cap, "_PALETTE_SIZE", num_colors);
@@ -222,9 +182,4 @@ static void WriteSeparate(ofstream& file_c, ofstream& file_h, std::vector<Magick
         WriteDefine(file_h, name_cap, "_WIDTH", image.columns());
         WriteDefine(file_h, name_cap, "_HEIGHT", image.rows());
     }
-
-    WriteEndHeaderGuard(file_h);
-
-    file_h.close();
-    file_c.close();
 }

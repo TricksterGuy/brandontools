@@ -46,9 +46,13 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "sprites", "sprites", "Treat image as a GBA sprite sheet (Not implemented do not use)",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_SWITCH, "tiles", "tiles", "Treat image as a tileset (tile image sheet) and export a palette and tile array.",
+        wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_SWITCH, "map", "map", "Treat image as a map (-tileset=image required) and export it against tileset image given.",
+        wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
 
     // General helpful options
-    {wxCMD_LINE_OPTION, "resize", "resize", "(Usage -resize=240,160) Resizes ALL images given to w,h",
+    {wxCMD_LINE_OPTION, "resize", "resize", "(Usage -resize=240,160) Resizes ALL images (except images passed in through --tileset) given to w,h",
         wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "transparent", "transparent",
         "(Usage -transparent=r,g,b) Makes the color r,g,b transparent note that r,g,b corresponds "
@@ -65,13 +69,9 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         "animated gif or multiple images or multiple animated gifs for that matter.",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
 
-    // Mode 4 options
-    {wxCMD_LINE_SWITCH, "usegimp", "usegimp",
-        "Only for mode4 exports.  Will run gimp and use its palette generation algorithm to generate the "
-        "palette.  Only if you have copied makeindexed.scm in gimp's plugin directories.",
-        wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+    // Mode 0/4 options
     {wxCMD_LINE_SWITCH, "split", "split",
-        "Only for mode4 exports.  Exports each individual image with its own palette.  Useful for sets of screens. "
+        "Only for mode0/4 exports.  Exports each individual image with its own palette (and tileset).  Useful for sets of screens. "
         "Or videos (yes this program will convert an avi file into frames for you).",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "start", "start",
@@ -83,20 +83,29 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         "Useful when combined with -start.",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
 
+    // Mode 0 exclusive options
+    {wxCMD_LINE_OPTION, "split_sbb", "split_sbb", "(Usage -split_sbb=1-4) Given a big map image (>1024,1024) split it into multiple maps."
+        " 1 = (32, 32), 2 = (64, 32), 3 = (32, 64), 4 = (64, 64). Image must be divisible by split size.",
+        wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_OPTION, "tileset", "tileset", "Tileset image to export against when using -map.",
+        wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_OPTION, "border", "border", "Border around each tile in tileset image",
+        wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
+
     // Advanced Mode 4 options Use at your own risk.
     {wxCMD_LINE_OPTION, "weights", "weights",
-        "Only for mode4 exports.  ADVANCED option use at your own risk. (Usage -weights=w1,w2,w3,w4) "
+        "Only for mode0/4 exports.  ADVANCED option use at your own risk. (Usage -weights=w1,w2,w3,w4) "
         "Fine tune? median cut algorithm.  w1 = volume, w2 = population, w3 = volume*population, w4 = error "
         "Affects image output quality for mode4, Range of w1-w4 is [0,100] but must sum up to 100 "
         "These values affects which colors are chosen by the median cut algorithm used to reduce the number "
         "of colors in the image.", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "dither", "dither",
-        "Only for mode4 exports.  ADVANCED option use at your own risk. (Usage -dither=0 or -dither=1) "
+        "Only for mode0/4 exports.  ADVANCED option use at your own risk. (Usage -dither=0 or -dither=1) "
         "Apply dithering after the palette is chosen.  Dithering makes the image look better by reducing "
         "large areas of one color as a result of reducing the number of colors in the image by adding noise.",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "dither_level", "dither_level",
-        "Only for mode4 exports.  ADVANCED option use at your own risk. (Usage -dither_level=num) "
+        "Only for mode0/4 exports.  ADVANCED option use at your own risk. (Usage -dither_level=num) "
         "Only applicable if -dither=1.  The range of num is [0,100]. This option affects how strong the "
         "dithering effect is by default it is set to 80.",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
@@ -111,6 +120,17 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
 
 IMPLEMENT_APP(BrandonToolsApp);
 
+enum
+{
+    MODE0 = 0,
+    MODE3 = 3,
+    MODE4 = 4,
+    SPECIAL_MODES = 7,
+    SPRITES = 7,
+    TILES = 8,
+    MAP = 9,
+};
+
 // Parsed command line options
 wxArrayString files;
 // Debugging
@@ -120,21 +140,29 @@ bool mode0 = false;
 bool mode3 = false;
 bool mode4 = false;
 bool sprites = false;
+bool tiles = false;
+bool map = false;
 long bpp = 8;
 // Helpful options
 wxString resize = "";
 wxString transparent = "";
 bool animated = false;
 // Mode 4 options
-bool usegimp = false;
 bool split_palette = false;
 long start = 0;
 long palette_size = 256;
 wxString weights = "";
 long dither = 1;
 long dither_level = 80;
+// Mode 0 options
+wxString tileset = "";
+long split_sbb = -1;
+long border = 0;
 bool hide = false;
 bool full_palette = false;
+
+// Tileset names will be here
+std::vector<std::string> tilesets;
 
 // All of the read in command line flags will be in this structure.
 ExportParams eparams;
@@ -165,13 +193,14 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     mode3 = parser.Found(_("mode3"));
     mode4 = parser.Found(_("mode4"));
     sprites = parser.Found(_("sprites"));
+    tiles = parser.Found(_("tiles"));
+    map = parser.Found(_("map"));
     parser.Found(_("bpp"), &bpp);
 
     parser.Found(_("resize"), &resize);
     parser.Found(_("transparent"), &transparent);
     animated = parser.Found(_("animated"));
 
-    usegimp = parser.Found(_("usegimp"));
     split_palette = parser.Found(_("split"));
     parser.Found(_("start"), &start);
     parser.Found(_("palette"), &palette_size);
@@ -179,6 +208,10 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     parser.Found(_("weights"), &weights);
     parser.Found(_("dither"), &dither);
     parser.Found(_("dither_level"), &dither_level);
+
+    parser.Found(_("split_sbb"), &split_sbb);
+    parser.Found(_("tileset"), &tileset);
+    parser.Found(_("border"), &border);
 
     hide = parser.Found(_("hide"));
     full_palette = parser.Found(_("fullpalette"));
@@ -222,25 +255,34 @@ bool BrandonToolsApp::Validate()
     eparams.palette = palette_size;
     eparams.fullpalette = full_palette;
     eparams.split = split_palette;
+    eparams.split_sbb = split_sbb;
     eparams.bpp = bpp;
+    eparams.border = border;
 
     // Mode check
-    if (mode0 + mode3 + mode4 + sprites != 1)
+    if (mode0 + mode3 + mode4 + sprites + map + tiles != 1)
     {
-        printf("[FATAL] Only 1 of -modeXXX and -sprites can be set at a time or none set.\n");
+        printf("[FATAL] Only 1 of -modeXXX, -sprites, -map, and -tiles can be set at a time or none set.\n");
         return false;
     }
 
-    if (mode0) eparams.mode = 0;
-    if (mode3) eparams.mode = 3;
-    if (mode4) eparams.mode = 4;
-    if (sprites) eparams.mode = 7;
-    if (bpp != 4 && bpp != 8 && (mode0 || sprites))
+    if (mode0) eparams.mode = MODE0;
+    if (mode3) eparams.mode = MODE3;
+    if (mode4) eparams.mode = MODE4;
+    if (sprites) eparams.mode = SPRITES;
+    if (tiles) eparams.mode = TILES;
+    if (map) eparams.mode = MAP;
+    if (bpp != 4 && bpp != 8 && (mode0 || eparams.mode >= SPECIAL_MODES))
     {
         printf("[FATAL] Invalid bpp %ld specified.  Can only set bpp to 4 or 8.\n", bpp);
         return false;
     }
 
+    if (map && tileset.IsEmpty())
+    {
+        printf("[FATAL] -map export specified however -tileset not given or empty\n");
+        return false;
+    }
 
     if (files.size() <= 1)
     {
@@ -337,6 +379,24 @@ bool BrandonToolsApp::Validate()
         printf("[WARNING] trying to make palette > 256.\n");
     }
 
+    if (!tileset.IsEmpty())
+    {
+        std::string tileset_files = tileset.ToStdString();
+        split(tileset.ToStdString(), ',', tilesets);
+        header.SetTilesets(tilesets);
+    }
+
+    // Info/Warning text for tiles
+    if (eparams.mode == TILES && !resize.IsEmpty())
+    {
+        printf("[WARNING] exporting tiles when passing in -resize, your map may export incorrectly if you aren't careful.\n");
+    }
+    if (eparams.mode == TILES)
+    {
+        printf("[INFO] trying to export tiles only.  When using -map ensure you pass as -tileset the images you used for this export in that exact order.\n");
+        header.SetTilesets(eparams.files);
+    }
+
     return true;
 }
 
@@ -346,27 +406,12 @@ bool BrandonToolsApp::DoLoadImages()
     {
         for (unsigned int i = 0; i < eparams.files.size(); i++)
         {
-            if (!usegimp)
-            {
-                readImages(&eparams.images, eparams.files[i]);
-            }
-            else
-            {
-                char command[1024];
-                std::string filename = eparams.files[i];
-                Chop(filename);
-                filename = "/tmp/" + filename;
-                snprintf(command, 1024, "gimp -d -i -b \"(script-fu-make-indexed \\\"%s\\\" %d \\\"%s\\\")\" -b \"(gimp-quit 0)\" 2> /dev/null",
-                         eparams.files[i].c_str(), eparams.palette, filename.c_str());
-                int ret = system(command);
-                if (ret != 0) printf("[WARNING] You specified to use gimp however gimp has failed for some reason\n");
-                if (ret != 0)
-                    readImages(&eparams.images, eparams.files[i]);
-                else
-                    readImages(&eparams.images, filename);
-                if (ret == 0)
-                    printf("[INFO] GIMP Successfully exported image!");
-            }
+            readImages(&eparams.images, eparams.files[i]);
+        }
+        // Handle -tileset
+        for (unsigned int i = 0; i < tilesets.size(); i++)
+        {
+            readImages(&eparams.tileset, tilesets[i]);
         }
         for (unsigned int i = 0; i < eparams.files.size(); i++)
             Chop(eparams.files[i]);
@@ -393,7 +438,7 @@ bool BrandonToolsApp::DoHandleResize()
         }
     }
 
-    if (eparams.mode != 0 && eparams.mode != 7)
+    if (eparams.mode != 0 && eparams.mode <= SPECIAL_MODES)
     {
         for (unsigned int i = 0; i < eparams.images.size(); i++)
         {
@@ -478,18 +523,21 @@ bool BrandonToolsApp::DoExportImages()
     {
         switch (eparams.mode)
         {
-            case 0:
+            case MODE0:
                 printf("NOT IMPLEMENTED YET SILLY");
                 return false;
-            case 3:
+            case MODE3:
                 DoMode3Multi(eparams.images, eparams);
                 break;
-            case 4:
+            case MODE4:
                 DoMode4Multi(eparams.images, eparams);
                 break;
-            case 7:
+            case SPRITES:
                 printf("NOT IMPLEMENTED YET SILLY");
                 return false;
+            case TILES:
+                DoTilesetExport(eparams.images, eparams);
+                break;
             default:
                 printf("No mode specified image not exported");
                 return false;
@@ -499,21 +547,24 @@ bool BrandonToolsApp::DoExportImages()
     {
         switch (eparams.mode)
         {
-            case 0:
+            case MODE0:
                 if (bpp == 4)
                     DoMode0_4bpp(eparams.images[0], eparams);
                 else if (bpp == 8)
                     DoMode0_8bpp(eparams.images[0], eparams);
                 break;
-            case 3:
+            case MODE3:
                 DoMode3(eparams.images[0], eparams);
                 break;
-            case 4:
+            case MODE4:
                 DoMode4(eparams.images[0], eparams);
                 break;
-            case 7:
+            case SPRITES:
                 printf("NOT IMPLEMENTED YET SILLY");
                 return false;
+            case TILES:
+                DoTilesetExport(eparams.images, eparams);
+                break;
             default:
                 printf("No mode specified image not exported");
                 return false;
