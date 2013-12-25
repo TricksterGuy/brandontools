@@ -1,63 +1,91 @@
 #include "reductionhelper.hpp"
+
+#include <algorithm>
 #include <cfloat>
+#include <cstdio>
+#include <cstdlib>
 
-using namespace std;
+#include "cpercep.hpp"
+#include "dither.hpp"
+#include "fileutils.hpp"
+#include "mediancut.hpp"
+#include "shared.hpp"
 
-std::vector<Color> palette;
-std::map<Color, int> paletteMap;
-
-Magick::Image ConvertToGBA(Magick::Image image)
+Image16Bpp::Image16Bpp(Magick::Image image, const std::string& _name) : width(image.columns()), height(image.rows()), name(_name), pixels(width * height)
 {
-    // GBA colors are 16bit ubbbbbgggggrrrrr
-    // u = unused
-    // CLAMP to (0, 31/255)
-    // QUICK HACK HERE since current libmagick package in ubuntu's repo fails.
-    //image.fx("round(r*31)/255", Magick::RedChannel);
-    //image.fx("round(g*31)/255", Magick::GreenChannel);
-    //image.fx("round(b*31)/255", Magick::BlueChannel);
+    unsigned int num_pixels = width * height;
+    const Magick::PixelPacket* imageData = image.getConstPixels(0, 0, image.columns(), image.rows());
 
-    // Ensure that there are no other references to this image.
-    image.modifyImage();
-    // Set the image type to TrueColor DirectClass representation.
-    image.type(Magick::TrueColorType);
-
-    unsigned char* pixels = new unsigned char[image.columns() * image.rows() * 3];
-    image.write(0, 0, image.columns(), image.rows(), "RGB", Magick::CharPixel, pixels);
-
-
-    int icount = 0;
-    for (unsigned int i = 0; i < image.rows(); i++)
+    size_t depth;
+    MagickCore::GetMagickQuantumDepth(&depth);
+    for (unsigned int i = 0; i < num_pixels; i++)
     {
-        for (unsigned int j = 0; j < image.columns(); j++)
+        const Magick::PixelPacket& packet = imageData[i];
+        int r, g, b;
+        if (depth == 8)
         {
-            pixels[icount] = round(pixels[icount] * 31) / 255;
-            pixels[icount + 1] = round(pixels[icount + 1] * 31) / 255;
-            pixels[icount + 2] = round(pixels[icount + 2] * 31) / 255;
-            icount += 3;
+            r = (packet.red > 3) & 0x1F;
+            g = (packet.green > 3) & 0x1F;
+            b = (packet.blue > 3) & 0x1F;
         }
+        else if (depth == 16)
+        {
+            r = (packet.red > 11) & 0x1F;
+            g = (packet.green > 11) & 0x1F;
+            b = (packet.blue > 11) & 0x1F;
+        }
+        else
+        {
+            printf("[FATAL] Image quantum not supported\n");
+            exit(EXIT_FAILURE);
+        }
+        pixels[i] = r | g << 5 | b << 10;
     }
-
-	std::string filename = image.baseFilename();
-    image.read(image.columns(), image.rows(), "RGB", Magick::CharPixel, pixels);
-	image.comment(filename);
-
-    delete[] pixels;
-
-    return image;
 }
 
-int paletteSearch(Color a)
+void Image16Bpp::GetColors(std::vector<Color>& colors) const
+{
+    colors.resize(width * height);
+    std::vector<Color>::iterator it = colors.begin();
+    GetColors(it);
+}
+
+void Image16Bpp::GetColors(std::vector<Color>::iterator& color_ptr) const
+{
+    for (unsigned int i = 0; i < width * height; i++)
+    {
+        short pix = pixels[i];
+        color_ptr->Set(pix & 0x1f, (pix >> 5) & 0x1f, (pix >> 10) & 0x1f);
+        color_ptr++;
+    }
+}
+
+void Image16Bpp::WriteData(std::ostream& file) const
+{
+    WriteShortArray(file, name, "", pixels, 10);
+    WriteNewLine(file);
+}
+
+void Image16Bpp::WriteExport(std::ostream& file) const
+{
+    WriteExternShortArray(file, name, "", pixels.size());
+    WriteDefine(file, name, "_WIDTH", width);
+    WriteDefine(file, name, "_HEIGHT", height);
+    WriteNewLine(file);
+}
+
+int Palette::Search(const Color& a) const
 {
     register double bestd = DBL_MAX;
     int index = -1;
 
-    if (paletteMap.find(a) != paletteMap.end())
-        return paletteMap[a];
+    if (colorIndexCache.find(a) != colorIndexCache.end())
+        return colorIndexCache[a];
 
-    for (unsigned int i = 0; i < palette.size(); i++)
+    for (unsigned int i = 0; i < colors.size(); i++)
     {
         double dist = 0;
-        Color b = palette[i];
+        const Color& b = colors[i];
         dist = a.Distance(b);
         if (dist < bestd)
         {
@@ -66,257 +94,282 @@ int paletteSearch(Color a)
         }
     }
 
-    paletteMap[a] = index;
+    colorIndexCache[a] = index;
 
     return index;
 }
 
-void QuantizeImage(Magick::Image image, const ExportParams& params, IndexedImage& indexedImage)
+void Palette::WriteData(std::ostream& file) const
 {
-    unsigned int num_pixels = image.rows() * image.columns();
-    // If the image width is odd warn them
-    if (image.columns() % 2)
-        printf("[WARNING] Image width is not a multiple of 2\n");
-
-    image = ConvertToGBA(image);
-
-    unsigned char* imagePixels = new unsigned char[num_pixels * 3];
-    std::vector<Color> pixels(num_pixels);
-    palette.clear();
-    image.write(0, 0, image.columns(), image.rows(), "RGB", Magick::CharPixel, imagePixels);
-
-    for (unsigned int i = 0; i < num_pixels; i++)
-        pixels[i].Set(imagePixels[3 * i + 0], imagePixels[3 * i + 1], imagePixels[3 * i + 2]);
-    delete[] imagePixels;
-
-    MedianCut(pixels, params.palette, palette, params.weights);
-    RiemersmaDither(pixels.begin(), indexedImage, image.columns(), image.rows(), params.dither, params.dither_level);
+    WriteShortArray(file, name, "_palette", colors, 10);
+    WriteNewLine(file);
 }
 
-struct DitherImage
+void Palette::WriteExport(std::ostream& file) const
 {
-    DitherImage(std::vector<Color>::iterator i, IndexedImage& outImage,
-                int x, int y, int w, int h, int dither, float ditherlevel) : image(i), indexedImage(outImage)
-    {
-        this->x = x;
-        this->y = y;
-        this->width = w;
-        this->height = h;
-        this->dither = dither;
-        this->ditherlevel = ditherlevel;
-    }
-    std::vector<Color>::iterator image;
-    IndexedImage& indexedImage;
-    int width, height;
-    int x, y;
-    int dither;
-    float ditherlevel;
-};
-
-enum
-{
-    NONE,
-    UP,
-    LEFT,
-    DOWN,
-    RIGHT,
-};
-
-int Dither(Color& color, int dither, float ditherlevel)
-{
-    static int ex = 0, ey = 0, ez = 0;
-    Color newColor(CLAMP(color.x + ex), CLAMP(color.y + ey), CLAMP(color.z + ez));
-    int index = paletteSearch(newColor);
-    newColor = palette[index];
-
-    if (dither)
-    {
-        ex += color.x - newColor.x;
-        ey += color.y - newColor.y;
-        ez += color.z - newColor.z;
-        ex *= ditherlevel;
-        ey *= ditherlevel;
-        ez *= ditherlevel;
-    }
-
-    return index;
+    WriteExternShortArray(file, name, "_palette", colors.size());
+    WriteDefine(file, name, "_PALETTE_SIZE", colors.size());
+    WriteNewLine(file);
 }
 
-static void move(DitherImage& image, int direction)
+Image8Bpp::Image8Bpp(const Image16Bpp& image) : width(image.width), height(image.height), name(image.name), pixels(width * height), palette(NULL)
 {
-    /* dither the current pixel */
-    if (image.x >= 0 && image.x < image.width && image.y >= 0 && image.y < image.height)
-    {
-        int index = Dither(image.image[image.x + image.y * image.width], image.dither, image.ditherlevel);
-        image.indexedImage[image.x + image.y * image.width] = index;
-    }
+    // If the image width is odd error out
+    if (width & 1)
+        throw "[ERROR] Image width is not a multiple of 2. Please fix\n";
 
-    /* move to the next pixel */
-    switch (direction)
+    std::vector<Color> pixels16;
+    image.GetColors(pixels16);
+
+    std::vector<Color> paletteColors;
+    MedianCut(pixels16, params.palette, paletteColors, params.weights);
+    palette.reset(new Palette(paletteColors, name));
+    RiemersmaDither(pixels16.begin(), *this, params.dither, params.dither_level);
+    if (params.offset > 0)
     {
-        case LEFT:
-            image.x -= 1;
-            break;
-        case RIGHT:
-            image.x += 1;
-            break;
-        case UP:
-            image.y -= 1;
-            break;
-        case DOWN:
-            image.y += 1;
-            break;
+        for (unsigned char& pix : pixels)
+            pix += params.offset;
     }
 }
 
-void Hilbert(DitherImage& image, int level, int direction)
+void Image8Bpp::Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palette)
 {
-    if (level == 1)
+    width = image.width;
+    height = image.height;
+    name = image.name;
+    pixels.resize(width * height);
+    palette = global_palette;
+
+    std::vector<Color> pixels16;
+    image.GetColors(pixels16);
+
+    RiemersmaDither(pixels16.begin(), *this, params.dither, params.dither_level);
+    if (params.offset > 0)
     {
-        switch (direction)
-        {
-            case LEFT:
-                move(image, RIGHT);
-                move(image, DOWN);
-                move(image, LEFT);
-                break;
-            case RIGHT:
-                move(image, LEFT);
-                move(image, UP);
-                move(image, RIGHT);
-                break;
-            case UP:
-                move(image, DOWN);
-                move(image, RIGHT);
-                move(image, UP);
-                break;
-            case DOWN:
-                move(image, UP);
-                move(image, LEFT);
-                move(image, DOWN);
-                break;
-        }
-    }
-    else
-    {
-        switch (direction)
-        {
-            case LEFT:
-                Hilbert(image, level - 1, UP);
-                move(image, RIGHT);
-                Hilbert(image, level - 1, LEFT);
-                move(image, DOWN);
-                Hilbert(image, level - 1, LEFT);
-                move(image, LEFT);
-                Hilbert(image, level - 1, DOWN);
-                break;
-            case RIGHT:
-                Hilbert(image, level - 1, DOWN);
-                move(image, LEFT);
-                Hilbert(image, level - 1, RIGHT);
-                move(image, UP);
-                Hilbert(image, level - 1, RIGHT);
-                move(image, RIGHT);
-                Hilbert(image, level - 1, UP);
-                break;
-            case UP:
-                Hilbert(image, level - 1, LEFT);
-                move(image, DOWN);
-                Hilbert(image, level - 1, UP);
-                move(image, RIGHT);
-                Hilbert(image, level - 1, UP);
-                move(image, UP);
-                Hilbert(image, level - 1, RIGHT);
-                break;
-            case DOWN:
-                Hilbert(image, level - 1, RIGHT);
-                move(image, UP);
-                Hilbert(image, level - 1, DOWN);
-                move(image, LEFT);
-                Hilbert(image, level - 1, DOWN);
-                move(image, DOWN);
-                Hilbert(image, level - 1, LEFT);
-                break;
-        }
+        for (unsigned char& pix : pixels)
+            pix += params.offset;
     }
 }
 
-void RiemersmaDither(std::vector<Color>::iterator image, IndexedImage& indexedImage, int width,
-                     int height, int dither, float ditherlevel)
+void Image8Bpp::WriteData(std::ostream& file) const
 {
-    DitherImage dimage(image, indexedImage, 0, 0, width, height, dither, ditherlevel);
-    int size = ceil(log2(std::max(width, height)));
-    if (size > 0) Hilbert(dimage, size, UP);
-    move(dimage, NONE);
+    WriteShortArray(file, name, "", pixels, 10);
+    WriteNewLine(file);
 }
 
-void FormPaletteAndIndexedImages(std::vector<Magick::Image> images, const ExportParams& params, std::vector<IndexedImage>& indexedImages)
+void Image8Bpp::WriteExport(std::ostream& file) const
 {
-    for (unsigned int i = 0; i < images.size(); i++)
-        images[i] = ConvertToGBA(images[i]);
+    WriteExternShortArray(file, name, "", pixels.size());
+    WriteDefine(file, name, "_WIDTH", width);
+    WriteDefine(file, name, "_HEIGHT", height);
+    WriteNewLine(file);
+}
 
-    // TODO make this more memory efficient.
+Image8BppScene::Image8BppScene(const std::vector<Image16Bpp>& images16, const std::string& _name) : name(_name), images(images16.size()), palette(NULL)
+{
     unsigned int total_pixels = 0;
-    for (unsigned int i = 0; i < images.size(); i++)
-        total_pixels += images[i].rows() * images[i].columns();
-    unsigned char* all_pixels = new unsigned char[total_pixels * 3];
-    unsigned char* current = all_pixels;
+    for (unsigned int i = 0; i < images16.size(); i++)
+        total_pixels += images16[i].width * images16[i].height;
 
-    for (unsigned int i = 0; i < images.size(); i++)
-    {
-        images[i].write(0, 0, images[i].columns(), images[i].rows(), "RGB", Magick::CharPixel, current);
-        current += images[i].columns() * images[i].rows() * 3;
-    }
     std::vector<Color> pixels(total_pixels);
-    for (unsigned int i = 0; i < total_pixels; i++)
-        pixels[i].Set(all_pixels[3 * i + 0], all_pixels[3 * i + 1], all_pixels[3 * i + 2]);
-    delete[] all_pixels;
-    MedianCut(pixels, params.palette, palette, params.weights);
+    std::vector<Color>::iterator iterator = pixels.begin();
+    for (unsigned int i = 0; i < images16.size(); i++)
+        images16[i].GetColors(iterator);
 
-    indexedImages.resize(images.size());
+    std::vector<Color> paletteColors;
+    MedianCut(pixels, params.palette, paletteColors, params.weights);
+    palette.reset(new Palette(paletteColors, name));
 
-    // Dither and form all images
-    int location = 0;
     for (unsigned int i = 0; i < images.size(); i++)
+        images[i].Set(images16[i], palette);
+}
+
+void Image8BppScene::WriteData(std::ostream& file) const
+{
+    palette->WriteData(file);
+    for (const auto& image : images)
+        image.WriteData(file);
+}
+
+void Image8BppScene::WriteExport(std::ostream& file) const
+{
+    palette->WriteExport(file);
+    for (const auto& image : images)
+        image.WriteExport(file);
+}
+
+Tileset::Tileset(const std::vector<Image16Bpp>& images, const std::string& _name, int _bpp) : name(_name), bpp(_bpp)
+{
+    switch(bpp)
     {
-        indexedImages[i].resize(images[i].rows() * images[i].columns(), 1);
-        RiemersmaDither(pixels.begin() + location, indexedImages[i], images[i].columns(), images[i].rows(), params.dither, params.dither_level);
-        location += images[i].columns() * images[i].rows();
+        case 4:
+            Init4bpp(images);
+            break;
+        case 8:
+            Init8bpp(images);
+            break;
+        case 16:
+            Init16bpp(images);
+            break;
     }
 }
 
-void GetTiles8bpp(std::vector<Magick::Image> images, const ExportParams& params, std::vector<Tile>& tiles, std::vector<short>& offsets)
+Tileset::Tileset(const Image16Bpp& image, int _bpp) : name(image.name), bpp(_bpp)
+{
+    std::vector<Image16Bpp> images;
+    images.push_back(image);
+    switch(bpp)
+    {
+        case 4:
+            Init4bpp(images);
+            break;
+        case 8:
+            Init8bpp(images);
+            break;
+        case 16:
+            Init16bpp(images);
+            break;
+    }
+}
+
+int Tileset::Search(const GBATile& tile) const
+{
+    const std::set<GBATile>::const_iterator foundTile = tiles.find(tile);
+    if (foundTile != tiles.end())
+        return foundTile->id;
+
+    return -1;
+}
+
+int Tileset::Search(const ImageTile& tile) const
+{
+    const std::set<ImageTile>::const_iterator foundTile = itiles.find(tile);
+    if (foundTile != itiles.end())
+        return foundTile->id;
+
+    return -1;
+}
+
+void Tileset::WriteData(std::ostream& file) const
+{
+    palette->WriteData(file);
+    std::set<GBATile>::const_iterator tile_ptr = tiles.begin();
+    file << "const unsigned short " << name << "_tiles[" << Size() << "] =\n{\n\t";
+    for (unsigned int i = 0; i < tiles.size(); i++)
+    {
+        file << *tile_ptr;
+        if (i != tiles.size() - 1)
+            file << ",\n\t";
+        tile_ptr++;
+    }
+    file << "\n};\n";
+}
+
+void Tileset::WriteExport(std::ostream& file) const
+{
+    palette->WriteExport(file);
+    WriteDefine(file, name, "_PALETTE_TYPE", (bpp == 4) ? "(0 << 7)" : "(1 << 7)");
+    WriteNewLine(file);
+
+    WriteExternShortArray(file, name, "_tiles", Size());
+    WriteDefine(file, name, "_TILES", tiles.size());
+    WriteDefine(file, name, "_TILES_SIZE", Size());
+    WriteNewLine(file);
+}
+
+void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
+{
+
+}
+
+/*void GetTiles4bpp(std::vector<Magick::Image> images, const ExportParams& params, std::vector<GBATile>& tiles, std::vector<short>& offsets)
+{
+    // Form Image tiles
+    std::set<ImageTile> imageTiles;
+    GetTiles16bpp(images, params, imageTiles);
+
+    // Reduce each tile to 4bpp
+    for (std::set<ImageTile>::const_iterator i = imageTiles.begin(); i != imageTiles.end(); ++i)
+        tiles.push_back(GBATile(*i, 4));
+
+    // Ensure image contains < 256 colors
+    std::set<Color> bigPalette;
+    for (unsigned int i = 0; i < tiles.size(); i++)
+    {
+        const GBATile& tile = tiles[i];
+        const std::set<Color>& tile_palette = tile.GetPalette();
+        bigPalette.insert(tile_palette.begin(), tile_palette.end());
+    }
+
+    if (bigPalette.size() > 256)
+    {
+        // Ugh pain reform image from tiles and run 8bpp median cut
+        abort();
+    }
+
+    // merge palettes to form the palette
+    std::vector<PaletteBank> paletteBanks;
+
+    std::sort(tiles.begin(), tiles.end(), TilesPaletteSizeComp);
+
+
+    // Checks
+    int tile_size = params.bpp == 8 ? TILE_SIZE_BYTES_8BPP : TILE_SIZE_BYTES_4BPP;
+    int memory_b = tiles.size() * tile_size;
+    if (tiles.size() >= 1024)
+    {
+        printf("[ERROR] Too many tiles found %zd tiles.\n"
+               "Please use -reduce or make the image simpler.\n", tiles.size());
+        exit(EXIT_FAILURE);
+    }
+
+    // Delicious infos
+    int cbbs = tiles.size() * tile_size / SIZE_CBB_BYTES;
+    int sbbs = (int) ceil(tiles.size() * tile_size % SIZE_CBB_BYTES / ((double)SIZE_SBB_BYTES));
+    printf("[INFO] Tiles found %zu.\n", tiles.size());
+    printf("[INFO] Tiles uses %d charblocks and %d screenblocks.\n", cbbs, sbbs);
+    printf("[INFO] Total utilization %.2f/4 charblocks or %d/32 screenblocks, %d/65536 bytes.\n",
+           memory_b / ((double)SIZE_CBB_BYTES), (int) ceil(memory_b / ((double)SIZE_SBB_BYTES)), memory_b);
+
+}*/
+
+void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
 {
     int tile_width = 8 + params.border;
-    std::vector<IndexedImage> indexedImages;
-    FormPaletteAndIndexedImages(images, params, indexedImages);
 
-    std::set<Tile> tileSet;
+    // Reduce all and get the global palette and reduced images.
+    Image8BppScene scene(images16, name);
+    palette = scene.palette;
 
-    tiles.push_back(NULLTILE);
-    tileSet.insert(NULLTILE);
+    const std::vector<Image8Bpp>& images = scene.images;
+
+    GBATile nullTile;
+    tiles.insert(nullTile);
 
     for (unsigned int k = 0; k < images.size(); k++)
     {
-        IndexedImage& indexedImage = indexedImages[k];
-        Magick::Image image = images[k];
+        const Image8Bpp& image = images[k];
 
         offsets.push_back(tiles.size());
-        unsigned int tilesX = image.columns() / tile_width;
-        unsigned int tilesY = image.rows() / tile_width;
+        unsigned int tilesX = image.width / tile_width;
+        unsigned int tilesY = image.height / tile_width;
         unsigned int totalTiles = tilesX * tilesY;
+
         // Perform reduce.
         for (unsigned int i = 0; i < totalTiles; i++)
         {
             int tilex = i % tilesX;
             int tiley = i / tilesX;
-            Tile tile(indexedImage, image.columns(), tilex, tiley, params.border);
-            std::set<Tile>::iterator foundTile = tileSet.find(tile);
-            if (foundTile == tileSet.end())
+            GBATile tile(image.pixels, image.width, tilex, tiley, params.border);
+            std::set<GBATile>::iterator foundTile = tiles.find(tile);
+            if (foundTile == tiles.end())
             {
                 tile.id = tiles.size();
-                tiles.push_back(tile);
-                tileSet.insert(tile);
+                tiles.insert(tile);
+            }
+            else if (offsets.size() > 1)
+            {
+                printf("[WARNING] Tiles found in tileset images are not disjoint, offset calculations may be off\n");
             }
         }
     }
@@ -338,54 +391,173 @@ void GetTiles8bpp(std::vector<Magick::Image> images, const ExportParams& params,
     printf("[INFO] Tiles uses %d charblocks and %d screenblocks.\n", cbbs, sbbs);
     printf("[INFO] Total utilization %.2f/4 charblocks or %d/32 screenblocks, %d/65536 bytes.\n",
            memory_b / ((double)SIZE_CBB_BYTES), (int) ceil(memory_b / ((double)SIZE_SBB_BYTES)), memory_b);
-
 }
 
-unsigned short PackPixels(const void* pixelArray, unsigned int i, const void* unused)
+void Tileset::Init16bpp(const std::vector<Image16Bpp>& images)
 {
-    // pixels[3*i] = r, pixels[3*i+1] = g, pixels[3*i+2] = b
-    const char* pixels = static_cast<const char*>(pixelArray);
-    return pixels[3 * i] | (pixels[3 * i + 1] << 5) | (pixels[3 * i + 2] << 10);
-}
+    int tile_width = 8 + params.border;
+    ImageTile nullTile;
+    itiles.insert(nullTile);
 
-unsigned short GetPaletteEntry(const void* paletteArray, unsigned int i, const void* offset_ptr)
-{
-    unsigned int p_offset = *static_cast<const unsigned int*>(offset_ptr);
-    // Return a dummy color (black) for the first offset colors.
-    if (i < p_offset)
-        return 0x8000;
-
-    const Color* palette = static_cast<const Color*>(paletteArray);
-    int x, y, z;
-    const Color& color = palette[i - p_offset];
-    color.Get(x, y, z);
-    return x | (y << 5) | (z << 10);
-}
-
-unsigned short GetIndexedEntry(const void* indicesArray, unsigned int i, const void* offset_ptr)
-{
-    unsigned int p_offset = *static_cast<const unsigned int*>(offset_ptr);
-    const unsigned char* indices = static_cast<const unsigned char*>(indicesArray);
-    int px1 = indices[2 * i] + p_offset;
-    int px2 = indices[2 * i + 1] + p_offset;
-    return px1 | (px2 << 8);
-}
-
-std::string getAnimFrameName(const void* stringArray, unsigned int i, const void* unused)
-{
-    const std::string* strings = static_cast<const std::string*>(stringArray);
-    return strings[i];
-}
-
-void WriteTiles(ostream& file, const ExportParams& params, const std::string& name, const std::vector<Tile>& tiles)
-{
-    file << "const unsigned short " << name << "_tiles[" << tiles.size() * (params.bpp == 8 ? TILE_SIZE_SHORTS_8BPP : TILE_SIZE_BYTES_4BPP) << "] =\n{\n\t";
-    for (unsigned int i = 0; i < tiles.size(); i++)
+    for (unsigned int k = 0; k < images.size(); k++)
     {
-        file << tiles[i];
-        if (i != tiles.size() - 1)
-            file << ",\n\t";
+        const Image16Bpp& image = images[k];
+        const std::vector<unsigned short>& pixels = image.pixels;
+
+        unsigned int tilesX = image.width / tile_width;
+        unsigned int tilesY = image.height / tile_width;
+        unsigned int totalTiles = tilesX * tilesY;
+
+        // Perform reduce.
+        for (unsigned int i = 0; i < totalTiles; i++)
+        {
+            int tilex = i % tilesX;
+            int tiley = i / tilesX;
+            ImageTile tile(pixels, image.width, tilex, tiley, params.border);
+            std::set<ImageTile>::iterator foundTile = itiles.find(tile);
+            if (foundTile == itiles.end())
+            {
+                tile.id = itiles.size();
+                itiles.insert(tile);
+            }
+        }
+    }
+}
+
+Map::Map(const Image16Bpp& image, int bpp) : width(image.width / 8), height(image.height / 8), name(image.name), data(width * height), tileset(NULL)
+{
+    // Create tileset according to bpp
+    tileset.reset(new Tileset(image, bpp));
+
+    // Tile match each tile in image
+    switch(bpp)
+    {
+        case 4:
+            Init4bpp(image);
+            break;
+        default:
+            Init8bpp(image);
+            break;
+    }
+}
+
+Map::Map(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset)
+{
+    Set(image, global_tileset);
+}
+
+void Map::Set(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset)
+{
+    tileset = global_tileset;
+
+    switch(tileset->bpp)
+    {
+        case 4:
+            Init4bpp(image);
+        default:
+            Init8bpp(image);
+    }
+}
+void Map::Init4bpp(const Image16Bpp& image)
+{
+
+}
+
+void Map::Init8bpp(const Image16Bpp& image16)
+{
+    Image8Bpp image(image16);
+    const std::vector<unsigned char>& pixels = image.pixels;
+
+    for (unsigned int i = 0; i < data.size(); i++)
+    {
+        int tilex = i % width;
+        int tiley = i / width;
+        GBATile tile(pixels, image.width, tilex, tiley);
+        int tile_id = tileset->Search(tile);
+
+        if (tile_id == -1)
+        {
+            printf("[WARNING] Image: %s No match for tile starting at (%d %d) px, using empty tile instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
+            tile_id = 0;
+        }
+
+        data[i] = tile_id;
+    }
+}
+
+void Map::WriteData(std::ostream& file) const
+{
+    int type = (width > 32 ? 1 : 0) | (height > 32 ? 1 : 0) << 1;
+    int num_blocks = (type == 0 ? 1 : (type < 3 ? 2 : 4));
+
+    file << "const unsigned short " << name << "_map[" << num_blocks * 32 * 32 << "] =\n{\n\t";
+    for (int i = 0; i < num_blocks; i++)
+    {
+        // Case for each possible value of num_blocks
+        // 1: 0
+        // 2: type is 1 - 0, 1
+        //    type is 2 - 0, 2
+        // 4: 0, 1, 2, 3
+        int sbb = (i == 0 ? 0 : (i == 1 && type == 2 ? 2 : i));
+        unsigned int sx, sy;
+        sx = ((sbb & 1) != 0) * 32;
+        sy = ((sbb & 2) != 0) * 32;
+        for (unsigned int y = 0; y < 32; y++)
+        {
+            for (unsigned int x = 0; x < 32; x++)
+            {
+                // Read tile if outside bounds replace with null tile
+                unsigned short tile_id;
+                if (x + sx > width || y + sy > height)
+                    tile_id = 0;
+                else
+                    tile_id = data[(y + sy) * width + (x + sx)];
+                // Write it.
+                WriteElement(file, tile_id, num_blocks * 32 * 32, (y + sy) * width + (x + sx), 8);
+            }
+        }
     }
     file << "\n};\n";
 }
 
+void Map::WriteExport(std::ostream& file) const
+{
+    WriteExternShortArray(file, name, "_map", Size());
+    WriteDefine(file, name, "_WIDTH", width);
+    WriteDefine(file, name, "_HEIGHT", height);
+    WriteDefine(file, name, "_MAP_SIZE", Size());
+    WriteDefine(file, name, "_MAP_TYPE", Type());
+    WriteNewLine(file);
+}
+
+MapScene::MapScene(const std::vector<Image16Bpp>& images, const std::string& _name, int bpp) : name(_name), maps(images.size()), tileset(NULL)
+{
+    tileset.reset(new Tileset(images, name, bpp));
+
+    for (unsigned int i = 0; i < maps.size(); i++)
+    {
+        maps[i].Set(images[i], tileset);
+    }
+}
+
+MapScene::MapScene(const std::vector<Image16Bpp>& images, const std::string& _name, std::shared_ptr<Tileset> _tileset) : name(_name), maps(images.size()), tileset(_tileset)
+{
+    for (unsigned int i = 0; i < maps.size(); i++)
+    {
+        maps[i].Set(images[i], tileset);
+    }
+}
+
+void MapScene::WriteData(std::ostream& file) const
+{
+    tileset->WriteData(file);
+    for (const auto& map : maps)
+        map.WriteData(file);
+}
+
+void MapScene::WriteExport(std::ostream& file) const
+{
+    tileset->WriteExport(file);
+    for (const auto& map : maps)
+        map.WriteExport(file);
+}

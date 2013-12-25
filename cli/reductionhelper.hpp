@@ -1,12 +1,16 @@
 #ifndef REDUCTION_HELPER_HPP
 #define REDUCTION_HELPER_HPP
 
-#include <vector>
+#include <iterator>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
 #include <Magick++.h>
-#include "shared.hpp"
-#include "cpercep.hpp"
-#include "mediancut.hpp"
+
 #include "tile.hpp"
 
 #define TOTAL_TILE_MEMORY_BYTES 65536
@@ -14,29 +18,119 @@
 #define SIZE_SBB_BYTES (1024 * 2)
 #define SIZE_SBB_SHORTS 1024
 
-typedef std::vector<unsigned char> IndexedImage;
+class Image16Bpp
+{
+    public:
+        Image16Bpp(Magick::Image image, const std::string& _name);
+        void GetColors(std::vector<Color>& colors) const;
+        void GetColors(std::vector<Color>::iterator& color_ptr) const;
+        unsigned int Size() const {return width * height;};
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        unsigned int width;
+        unsigned int height;
+        std::string name;
+        std::vector<unsigned short> pixels;
+};
 
-extern std::vector<Color> palette;
+class Palette
+{
+    public:
+        Palette(const std::vector<Color>& _colors, const std::string& _name) : colors(_colors), name(_name) {};
+        Color At(int index) const {return colors[index];}
+        int Search(const Color& color) const;
+        unsigned int Size() const {return colors.size();};
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        std::vector<Color> colors;
+        std::string name;
+    private:
+        mutable std::map<Color, int> colorIndexCache;
+};
 
-Magick::Image ConvertToGBA(Magick::Image image);
+class Image8Bpp
+{
+    public:
+        Image8Bpp() {};
+        Image8Bpp(const Image16Bpp& image);
+        void Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palette);
+        unsigned int Size() const {return width * height / 2;};
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        unsigned int width;
+        unsigned int height;
+        std::string name;
+        std::vector<unsigned char> pixels;
+        std::shared_ptr<Palette> palette;
+};
 
-int paletteSearch(Color a);
-void QuantizeImage(Magick::Image image, const ExportParams& params, IndexedImage& indexedImage);
-void RiemersmaDither(std::vector<Color>::iterator image, IndexedImage& indexedImage, int width, int height, int dither, float ditherlevel);
-void FormPaletteAndIndexedImages(std::vector<Magick::Image> images, const ExportParams& params, std::vector<IndexedImage>& indexedImages);
+class Image8BppScene
+{
+    public:
+        Image8BppScene(const std::vector<Image16Bpp>& images, const std::string& name);
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        std::string name;
+        std::vector<Image8Bpp> images;
+        std::shared_ptr<Palette> palette;
+};
 
-void GetTiles4bpp(std::vector<Magick::Image> images, const ExportParams& params, std::vector<Tile>& tiles, std::vector<short>& offsets);
-void GetTiles8bpp(std::vector<Magick::Image> images, const ExportParams& params, std::vector<Tile>& tiles, std::vector<short>& offsets);
+class Tileset
+{
+    public:
+        Tileset(const std::vector<Image16Bpp>& images, const std::string& name, int bpp);
+        Tileset(const Image16Bpp& image, int bpp);
+        int Search (const GBATile& tile) const;
+        int Search (const ImageTile& tile) const;
+        unsigned int Size() const {return tiles.size() * ((bpp == 4) ? TILE_SIZE_SHORTS_4BPP : (bpp == 8) ? TILE_SIZE_SHORTS_8BPP : 1);};
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        std::string name;
+        int bpp;
+        // Only one of two will be used bpp = 4 or 8: tiles 16: itiles
+        std::set<GBATile> tiles;
+        std::set<ImageTile> itiles;
+        // Only one max will be used bpp = 4: paletteBanks 8: palette 16: neither
+        std::shared_ptr<Palette> palette;
+        // Only valid for bpp = 4 and 8
+        std::vector<int> offsets;
+    private:
+        void Init4bpp(const std::vector<Image16Bpp>& images);
+        void Init8bpp(const std::vector<Image16Bpp>& images);
+        void Init16bpp(const std::vector<Image16Bpp>& images);
+};
 
-unsigned short PackPixels(const void* pixelArray, unsigned int i, const void* unused);
-unsigned short GetPaletteEntry(const void* paletteArray, unsigned int i, const void* num_colors);
-unsigned short GetIndexedEntry(const void* indicesArray, unsigned int i, const void* offset_ptr);
-std::string getAnimFrameName(const void* stringArray, unsigned int i, const void* unused);
+class Map
+{
+    public:
+        Map() {};
+        Map(const Image16Bpp& image, int bpp);
+        Map(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset);
+        void Set(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset);
+        unsigned int Size() const {return data.size();};
+        unsigned int Type() const {return (width > 32 ? 1 : 0) | (height > 32 ? 1 : 0) << 1;};
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        unsigned int width;
+        unsigned int height;
+        std::string name;
+        std::vector<unsigned short> data;
+        std::shared_ptr<Tileset> tileset;
+    private:
+        void Init4bpp(const Image16Bpp& image);
+        void Init8bpp(const Image16Bpp& image);
+};
 
-void WriteTiles(std::ostream& file, const ExportParams& params, const std::string& name, const std::vector<Tile>& tiles);
-
-#ifndef CLAMP
-#define CLAMP(x) (((x) < 0.0) ? 0.0 : (((x) > 31) ? 31 : (x)))
-#endif
+class MapScene
+{
+    public:
+        MapScene(const std::vector<Image16Bpp>& images, const std::string& name, int bpp);
+        MapScene(const std::vector<Image16Bpp>& images, const std::string& name, std::shared_ptr<Tileset> tileset);
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        std::string name;
+        std::vector<Map> maps;
+        std::shared_ptr<Tileset> tileset;
+};
 
 #endif

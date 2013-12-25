@@ -1,9 +1,13 @@
 #include "fortunegen.hpp"
+
+#include <cstdlib>
+#include <ctime>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
 #include "fortunes.hpp"
 #include "shared.hpp"
-#include <sstream>
-#include <cstdlib>
-
 
 /** FortuneGenerator
   *
@@ -11,7 +15,9 @@
   */
 FortuneGenerator::FortuneGenerator()
 {
+    // Quotes is different everyday
     quote = rand() % QUOTES;
+    // Fortune is random everytime.
     srand(time(NULL));
     fortune = rand() % FORTUNES;
 }
@@ -26,7 +32,7 @@ FortuneGenerator::~FortuneGenerator()
 
 const std::string FortuneGenerator::GetQuote() const
 {
-    std::string quotestr = quotes[quote];
+    const std::string& quotestr = quotes[quote];
     std::vector<std::string> lines;
     split(quotestr, '\n', lines);
     std::ostringstream ss;
@@ -41,7 +47,7 @@ const std::string FortuneGenerator::GetQuote() const
 
 const std::string FortuneGenerator::GetFortune() const
 {
-    std::string quotestr = fortunes[fortune];
+    const std::string& quotestr = fortunes[fortune];
     std::vector<std::string> lines;
     split(quotestr, '\n', lines);
     std::ostringstream ss;

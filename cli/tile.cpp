@@ -1,115 +1,84 @@
 #include "tile.hpp"
-#include "shared.hpp"
-#include <cstdlib>
-#include <cstring>
 
-Tile NULLTILE;
+#include <map>
 
-Tile::Tile(unsigned char* data_ptr, unsigned short* palette_ptr, unsigned short tile_id) :
-    id(tile_id), data(TILE_SIZE), palette(PALETTE_SIZE)
-{
-    Set(data_ptr, palette_ptr);
-}
+#include "fileutils.hpp"
+#include "reductionhelper.hpp"
 
-Tile::Tile(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, int border, bool is_8bpp) :
-    data(TILE_SIZE), palette(PALETTE_SIZE)
-{
-    Set(indexedImage, pitch, tilex, tiley, border, is_8bpp);
-}
-
-Tile::Tile(const std::vector<Color>& image, int pitch, int tilex, int tiley, int border)
-{
-    Set(image, pitch, tilex, tiley, border);
-}
-
-Tile::~Tile()
+template <>
+Tile<unsigned short>::Tile() : id(0), data(TILE_SIZE), bpp(16), palette_bank(0)
 {
 }
 
-void Tile::Set(unsigned char* data_ptr, unsigned short* palette_ptr)
+template <>
+Tile<unsigned short>::Tile(const std::vector<unsigned short>& image, int pitch, int tilex, int tiley, int border, int ignored) : data(TILE_SIZE), palette_bank(0)
 {
-    is_8bpp = true;
-    if (data_ptr)
-        data.assign(data_ptr, data_ptr + TILE_SIZE);
-    if (palette_ptr)
+    Set(image, pitch, tilex, tiley, border, 16);
+}
+
+template <>
+Tile<unsigned short>::Tile(const unsigned short* image, int pitch, int tilex, int tiley, int border, int ignored) : data(TILE_SIZE), palette_bank(0)
+{
+    Set(image, pitch, tilex, tiley, border, 16);
+}
+
+template <>
+Tile<unsigned char>::Tile(const Tile<unsigned short>& imageTile, int _bpp) : data(TILE_SIZE), bpp(_bpp)
+{
+/*    // bpp reduce
+    int num_colors = 1 << bpp;
+    const unsigned short* imgdata = imageTile.GetData().data();
+    int weights[4] = {25, 25, 25, 25};
+    std::vector<Color> paletteArray;
+
+    std::vector<Color> pixels(TILE_SIZE);
+
+    for (unsigned int i = 0; i < TILE_SIZE; i++)
     {
-        is_8bpp = false;
-        palette.assign(palette_ptr, palette_ptr + PALETTE_SIZE);
+        unsigned short pix = imgdata[i];
+        pixels[i].Set(pix & 0x1f, (pix >> 5) & 0x1f, (pix >> 10) & 0x1f);
     }
+
+    MedianCut(pixels, num_colors, paletteArray, weights);
+
+    std::map<Color, int> paletteMap;
+    for (unsigned int i = 0; i < TILE_SIZE; i++)
+        data[i] = paletteSearch(pixels[i], paletteArray, paletteMap);
+
+    for (unsigned int i = 0; i < paletteArray.size(); i++)
+        palette.insert(paletteArray[i]);*/
 }
 
-void Tile::Set(const std::vector<unsigned char>& indexedImage, int pitch, int tilex, int tiley, int border, bool is_8bpp_data)
+template <>
+std::ostream& operator<<(std::ostream& file, const Tile<unsigned char>& tile)
 {
-    is_8bpp = is_8bpp_data;
-    unsigned char* ptr = data.data();
-
-    for (int i = 0; i < 8; i++)
-        memcpy(ptr + i * 8, indexedImage.data() + (tiley * (8+border) + i) * pitch + tilex * (8+border), 8);
-}
-
-void Tile::Set(const std::vector<Color>& image, int pitch, int tilex, int tiley, int border)
-{
-    is_8bpp = false;
-    std::vector<Color> tile_data(TILE_SIZE);
-    for (int i = 0; i < 8; i++)
-        for (int j = 0; j < 8; j++)
-            tile_data[i * 8 + j] = image[(tiley * (8+border) + i) * pitch + tilex * (8+border) + j];
-}
-
-bool Tile::IsEqual(const Tile& other) const
-{
-    return data == other.data && palette == other.palette;
-}
-
-bool Tile::operator==(const Tile& other) const
-{
-    return IsEqual(other);
-}
-
-bool Tile::IsSameAs(const Tile& other) const
-{
-    bool same, sameh, samev, samevh;
-    same = sameh = samev = samevh = true;
-    for (int i = 0; i < TILE_SIZE; i++)
-    {
-        int x = i % 8;
-        int y = i / 8;
-        same = same && data[i] == other.data[i];
-        samev = samev && data[i] == other.data[(7 - y) * 8 + x];
-        sameh = sameh && data[i] == other.data[y * 8 + (7 - x)];
-        samevh = samevh && data[i] == other.data[(7 - y) * 8 + (7 - x)];
-    }
-    return same || samev || sameh || samevh;
-}
-
-bool Tile::operator<(const Tile& other) const
-{
-    return data < other.data;
-}
-
-std::ostream& operator<<(std::ostream& file, const Tile& tile)
-{
-    if (tile.is_8bpp)
+    const std::vector<unsigned char>& data = tile.GetData();
+    if (tile.bpp == 8)
     {
         for (unsigned int i = 0; i < TILE_SIZE_SHORTS_8BPP; i++)
         {
-            int px1 = tile.data[2 * i];
-            int px2 = tile.data[2 * i + 1];
-            unsigned short data = px1 | (px2 << 8);
-            WriteElement(file, data, TILE_SIZE_SHORTS_8BPP, i, 8);
+            int px1 = data[2 * i];
+            int px2 = data[2 * i + 1];
+            unsigned short shrt = px1 | (px2 << 8);
+            WriteElement(file, shrt, TILE_SIZE_SHORTS_8BPP, i, 8);
         }
     }
     else
     {
         for (unsigned int i = 0; i < TILE_SIZE_SHORTS_4BPP; i++)
         {
-            int px1 = tile.data[4 * i];
-            int px2 = tile.data[4 * i + 1];
-            int px3 = tile.data[4 * i + 2];
-            int px4 = tile.data[4 * i + 3];
-            unsigned short data = (px4 << 12) | (px3 << 8) | (px2 << 4) | px1;
-            WriteElement(file, data, TILE_SIZE_SHORTS_4BPP, i, 8);
+            int px1 = data[4 * i];
+            int px2 = data[4 * i + 1];
+            int px3 = data[4 * i + 2];
+            int px4 = data[4 * i + 3];
+            unsigned short shrt = (px4 << 12) | (px3 << 8) | (px2 << 4) | px1;
+            WriteElement(file, shrt, TILE_SIZE_SHORTS_4BPP, i, 8);
         }
     }
     return file;
+}
+
+bool TilesPaletteSizeComp(const GBATile& i, const GBATile& j)
+{
+    return i.GetPalette().size() > j.GetPalette().size();
 }

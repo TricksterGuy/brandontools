@@ -1,68 +1,55 @@
-#include <Magick++.h>
-#include <string>
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <fstream>
-#include "shared.hpp"
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "fileutils.hpp"
 #include "reductionhelper.hpp"
+#include "shared.hpp"
 
-using namespace Magick;
-using namespace std;
-
-static void WriteC(Magick::Image image, const ExportParams& params);
-
-void DoMode3(Magick::Image image, const ExportParams& params)
+void DoMode3(const std::vector<Image16Bpp>& images)
 {
-    header.SetMode(3);
     try
     {
-        WriteC(image, params);
+        // Set mode
+        header.SetMode(3);
+        implementation.SetMode(3);
+
+        // Add images to header and implemenation files
+        for (const auto& image : images)
+        {
+            std::shared_ptr<Image16Bpp> image_ptr(new Image16Bpp(image));
+            header.AddImage(image_ptr);
+            implementation.AddImage(image_ptr);
+        }
+
+        // Write the files
+        std::ofstream file_c, file_h;
+        InitFiles(file_c, file_h, params.name);
+
+        header.Write(file_h);
+        implementation.Write(file_c);
+
+        file_h.close();
+        file_c.close();
     }
-    catch (Exception &error_)
+    catch (const std::exception& ex)
     {
-        printf("%s\n", error_.what());
+        printf("Image to GBA (Mode3) failed! Reason: %s\n", ex.what());
+        exit(EXIT_FAILURE);
+    }
+    catch (const std::string& ex)
+    {
+        printf("Image to GBA (Mode3) failed! Reason: %s\n", ex.c_str());
+        exit(EXIT_FAILURE);
+    }
+    catch (...)
+    {
         printf("Image to GBA (Mode3) failed!");
         exit(EXIT_FAILURE);
     }
-}
-
-void WriteC(Magick::Image image, const ExportParams& params)
-{
-    ofstream file_c, file_h;
-    InitFiles(file_c, file_h, params.name);
-
-    std::string name = Format(params.name);
-    std::string name_cap = ToUpper(name);
-
-    image = ConvertToGBA(image);
-
-    // Get Image Data
-    int num_pixels = image.rows() * image.columns();
-    char* pixels = new char[num_pixels * sizeof(char) * 3];
-    image.write(0, 0, image.columns(), image.rows(), "RGB", CharPixel, pixels);
-
-    // Write out .c file
-    header.Write(file_c);
-    WriteShortArray(file_c, name, "", pixels, num_pixels, PackPixels, 10);
-    WriteNewLine(file_c);
-    delete[] pixels;
-    file_c.close();
-
-    // Write out .h file
-    header.Write(file_h);
-    WriteHeaderGuard(file_h, name_cap, "_BITMAP_H");
-    WriteExternShortArray(file_h, name, "", num_pixels);
-    WriteNewLine(file_h);
-    if (params.transparent_color != -1)
-    {
-        char buffer[7];
-        sprintf(buffer, "0x%04x", (unsigned short) params.transparent_color);
-        WriteDefine(file_h, name_cap, "_TRANSPARENT", buffer);
-    }
-    WriteDefine(file_h, name_cap, "_WIDTH", image.columns());
-    WriteDefine(file_h, name_cap, "_HEIGHT", image.rows());
-    WriteNewLine(file_h);
-    WriteEndHeaderGuard(file_h);
-    WriteNewLine(file_h);
-    file_h.close();
 }

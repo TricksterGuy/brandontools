@@ -1,15 +1,21 @@
+#include <algorithm>
+#include <map>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <ctime>
-#include <Magick++.h>
-#include "shared.hpp"
-#include "cpercep.hpp"
 #include <wx/cmdline.h>
-
 #include <wx/app.h>
+
+#include "cpercep.hpp"
+#include "headerfile.hpp"
+#include "implementationfile.hpp"
+#include "reductionhelper.hpp"
+#include "shared.hpp"
+#include "version.h"
 
 class BrandonToolsApp : public wxAppConsole
 {
@@ -85,9 +91,9 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
 
     // Mode 0 exclusive options
     {wxCMD_LINE_OPTION, "split_sbb", "split_sbb", "(Usage -split_sbb=1-4) Given a big map image (>1024,1024) split it into multiple maps."
-        " 1 = (32, 32), 2 = (64, 32), 3 = (32, 64), 4 = (64, 64). Image must be divisible by split size.",
+        " 1 = (32, 32), 2 = (64, 32), 3 = (32, 64), 4 = (64, 64). Image must be divisible by split size * 8.",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
-    {wxCMD_LINE_OPTION, "tileset", "tileset", "Tileset image to export against when using -map.",
+    {wxCMD_LINE_OPTION, "tileset", "tileset", "Tileset image(s) to export against when using -map.",
         wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "border", "border", "Border around each tile in tileset image",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
@@ -165,7 +171,7 @@ bool full_palette = false;
 std::vector<std::string> tilesets;
 
 // All of the read in command line flags will be in this structure.
-ExportParams eparams;
+ExportParams params;
 
 /** OnInit
   *
@@ -178,6 +184,13 @@ bool BrandonToolsApp::OnInit()
         printf("A problem occurred, please report this and give any images the command line that caused this\n");
         return false;
     }
+
+    // Give me the invocation
+    std::ostringstream out;
+    for (int i = 1; i < wxAppConsole::argc; i++)
+        out << wxAppConsole::argv[i] << " ";
+    header.SetInvocation(out.str());
+    implementation.SetInvocation(out.str());
 
     return true;
 }
@@ -240,24 +253,24 @@ void BrandonToolsApp::OnInitCmdLine(wxCmdLineParser& parser)
 bool BrandonToolsApp::Validate()
 {
     // default params
-    eparams.width = -1;
-    eparams.height = -1;
-    eparams.transparent_color = -1;
-    eparams.animated = animated;
+    params.width = -1;
+    params.height = -1;
+    params.transparent_color = -1;
+    params.animated = animated;
 
-    eparams.offset = start;
-    eparams.weights[0] = 25;
-    eparams.weights[1] = 25;
-    eparams.weights[2] = 25;
-    eparams.weights[3] = 25;
-    eparams.dither = dither;
-    eparams.dither_level = dither_level / 100.0f;
-    eparams.palette = palette_size;
-    eparams.fullpalette = full_palette;
-    eparams.split = split_palette;
-    eparams.split_sbb = split_sbb;
-    eparams.bpp = bpp;
-    eparams.border = border;
+    params.offset = start;
+    params.weights[0] = 25;
+    params.weights[1] = 25;
+    params.weights[2] = 25;
+    params.weights[3] = 25;
+    params.dither = dither;
+    params.dither_level = dither_level / 100.0f;
+    params.palette = palette_size;
+    params.fullpalette = full_palette;
+    params.split = split_palette;
+    params.split_sbb = split_sbb;
+    params.bpp = bpp;
+    params.border = border;
 
     // Mode check
     if (mode0 + mode3 + mode4 + sprites + map + tiles != 1)
@@ -266,13 +279,13 @@ bool BrandonToolsApp::Validate()
         return false;
     }
 
-    if (mode0) eparams.mode = MODE0;
-    if (mode3) eparams.mode = MODE3;
-    if (mode4) eparams.mode = MODE4;
-    if (sprites) eparams.mode = SPRITES;
-    if (tiles) eparams.mode = TILES;
-    if (map) eparams.mode = MAP;
-    if (bpp != 4 && bpp != 8 && (mode0 || eparams.mode >= SPECIAL_MODES))
+    if (mode0) params.mode = MODE0;
+    if (mode3) params.mode = MODE3;
+    if (mode4) params.mode = MODE4;
+    if (sprites) params.mode = SPRITES;
+    if (tiles) params.mode = TILES;
+    if (map) params.mode = MAP;
+    if (bpp != 4 && bpp != 8 && (mode0 || params.mode >= SPECIAL_MODES))
     {
         printf("[FATAL] Invalid bpp %ld specified.  Can only set bpp to 4 or 8.\n", bpp);
         return false;
@@ -290,10 +303,10 @@ bool BrandonToolsApp::Validate()
         return false;
     }
 
-    eparams.name = files[0];
+    params.name = files[0];
     for (unsigned int i = 1; i < files.size(); i++)
         // Validate file's names here.
-        eparams.files.push_back(files[i].ToStdString());
+        params.files.push_back(files[i].ToStdString());
 
     if (!resize.IsEmpty())
     {
@@ -304,15 +317,15 @@ bool BrandonToolsApp::Validate()
             printf("[FATAL] error parsing -resize only need 2 comma separated values, %zd given\n.", tokens.size());
             return false;
         }
-        eparams.width = atoi(tokens[0].c_str());
-        eparams.height = atoi(tokens[1].c_str());
-        if (eparams.files.size() > 1)
+        params.width = atoi(tokens[0].c_str());
+        params.height = atoi(tokens[1].c_str());
+        if (params.files.size() > 1)
         {
             printf("[WARNING] multiple files given, reminder they will ALL be resized.\n");
         }
-        if (eparams.width <= 0 || eparams.height <= 0)
+        if (params.width <= 0 || params.height <= 0)
         {
-            printf("[FATAL] bad width or height %d,%d.\n", eparams.width, eparams.height);
+            printf("[FATAL] bad width or height %d,%d.\n", params.width, params.height);
             return false;
         }
     }
@@ -326,27 +339,28 @@ bool BrandonToolsApp::Validate()
             printf("[FATAL] error parsing -transparent\n.");
             return false;
         }
-        int r = atoi(tokens[0].c_str());
-        int g = atoi(tokens[1].c_str());
-        int b = atoi(tokens[2].c_str());
-        r = (int)round(r*31)/255;
-        g = (int)round(g*31)/255;
-        b = (int)round(b*31)/255;
+        int r = atoi(tokens[0].c_str()) & 0xff;
+        int g = atoi(tokens[1].c_str()) & 0xff;
+        int b = atoi(tokens[2].c_str()) & 0xff;
+        r = r >> 3;
+        g = g >> 3;
+        b = b >> 3;
 
         if (r > 31 || r < 0 || g < 0 || g > 31 || b < 0 || b > 31)
             printf("[WARNING] -transparent one of r,g,b outside range continuing...\n");
 
-        eparams.transparent_color = b << 10 | g << 5 | r;
-        header.SetTransparent(eparams.transparent_color);
+        params.transparent_color = b << 10 | g << 5 | r;
+        header.SetTransparent(params.transparent_color);
+        implementation.SetTransparent(params.transparent_color);
     }
 
     if (mode4 && animated)
     {
         printf("[WARNING] animated is not implemented for mode4 exports if you really want this let me know.\n");
-        eparams.animated = animated;
+        params.animated = animated;
     }
 
-    if (eparams.offset >= 256)
+    if (params.offset >= 256)
     {
         printf("[WARNING] -start palette offset set to >= 256.\n");
     }
@@ -368,15 +382,15 @@ bool BrandonToolsApp::Validate()
         if (p < 0 || v < 0 || pv < 0 || error < 0 || (p+v+pv+error != 100))
             printf("[WARNING] -weights total does not sum up to 100 or invalid value given...\n");
 
-        eparams.weights[0] = p;
-        eparams.weights[1] = v;
-        eparams.weights[2] = pv;
-        eparams.weights[3] = error;
+        params.weights[0] = p;
+        params.weights[1] = v;
+        params.weights[2] = pv;
+        params.weights[3] = error;
     }
 
-    if (eparams.palette > 256)
+    if (params.palette > 256)
     {
-        printf("[WARNING] trying to make palette > 256.\n");
+        printf("[WARNING] trying to make palette size > 256.\n");
     }
 
     if (!tileset.IsEmpty())
@@ -384,17 +398,19 @@ bool BrandonToolsApp::Validate()
         std::string tileset_files = tileset.ToStdString();
         split(tileset.ToStdString(), ',', tilesets);
         header.SetTilesets(tilesets);
+        implementation.SetTilesets(tilesets);
     }
 
     // Info/Warning text for tiles
-    if (eparams.mode == TILES && !resize.IsEmpty())
+    if (params.mode == TILES && !resize.IsEmpty())
     {
         printf("[WARNING] exporting tiles when passing in -resize, your map may export incorrectly if you aren't careful.\n");
     }
-    if (eparams.mode == TILES)
+    if (params.mode == TILES)
     {
         printf("[INFO] trying to export tiles only.  When using -map ensure you pass as -tileset the images you used for this export in that exact order.\n");
-        header.SetTilesets(eparams.files);
+        header.SetTilesets(params.files);
+        implementation.SetTilesets(params.files);
     }
 
     return true;
@@ -404,17 +420,17 @@ bool BrandonToolsApp::DoLoadImages()
 {
     try
     {
-        for (unsigned int i = 0; i < eparams.files.size(); i++)
+        for (unsigned int i = 0; i < params.files.size(); i++)
         {
-            readImages(&eparams.images, eparams.files[i]);
+            readImages(&params.images, params.files[i]);
         }
         // Handle -tileset
         for (unsigned int i = 0; i < tilesets.size(); i++)
         {
-            readImages(&eparams.tileset, tilesets[i]);
+            readImages(&params.tileset, tilesets[i]);
         }
-        for (unsigned int i = 0; i < eparams.files.size(); i++)
-            Chop(eparams.files[i]);
+        for (unsigned int i = 0; i < params.files.size(); i++)
+            Chop(params.files[i]);
     }
     catch( Magick::Exception &error_ )
     {
@@ -428,22 +444,22 @@ bool BrandonToolsApp::DoLoadImages()
 
 bool BrandonToolsApp::DoHandleResize()
 {
-    if (eparams.width != -1 && eparams.height != -1)
+    if (params.width != -1 && params.height != -1)
     {
-        for (unsigned int i = 0; i < eparams.images.size(); i++)
+        for (unsigned int i = 0; i < params.images.size(); i++)
         {
-            Magick::Geometry geom(eparams.width, eparams.height);
+            Magick::Geometry geom(params.width, params.height);
             geom.aspect(true);
-            eparams.images[i].resize(geom);
+            params.images[i].resize(geom);
         }
     }
 
-    if (eparams.mode != 0 && eparams.mode <= SPECIAL_MODES)
+    if (params.mode != 0 && params.mode <= SPECIAL_MODES)
     {
-        for (unsigned int i = 0; i < eparams.images.size(); i++)
+        for (unsigned int i = 0; i < params.images.size(); i++)
         {
-            if (eparams.images[i].columns() > 240) printf(WARNING_WIDTH, eparams.images[i].baseFilename().c_str(), (int)eparams.images[i].columns());
-            if (eparams.images[i].rows() > 160) printf(WARNING_HEIGHT, eparams.images[i].baseFilename().c_str(), (int)eparams.images[i].rows());
+            if (params.images[i].columns() > 240) printf(WARNING_WIDTH, params.images[i].baseFilename().c_str(), (int)params.images[i].columns());
+            if (params.images[i].rows() > 160) printf(WARNING_HEIGHT, params.images[i].baseFilename().c_str(), (int)params.images[i].rows());
         }
     }
 
@@ -452,23 +468,25 @@ bool BrandonToolsApp::DoHandleResize()
 
 bool BrandonToolsApp::DoCheckAndLabelImages()
 {
-    for (unsigned int i = 0; i < eparams.images.size(); i++)
+    for (unsigned int i = 0; i < params.images.size(); i++)
     {
         bool isAnim = false;
 
-        if (i + 1 != eparams.images.size())
-            isAnim = eparams.images[i].scene() < eparams.images[i + 1].scene() || eparams.images[i].scene() != 0;
-        else if (eparams.images.size() != 1)
-            isAnim = eparams.images[i - 1].scene() < eparams.images[i].scene();
-        header.AddImage(eparams.images[i], isAnim);
-        eparams.images[i].label(isAnim ? "T" : "F");
+        if (i + 1 != params.images.size())
+            isAnim = params.images[i].scene() < params.images[i + 1].scene() || params.images[i].scene() != 0;
+        else if (params.images.size() != 1)
+            isAnim = params.images[i - 1].scene() < params.images[i].scene();
+
+        header.AddImageInfo(params.images[i].baseFilename(), params.images[i].scene(), params.images[i].columns(), params.images[i].rows(), isAnim);
+        implementation.AddImageInfo(params.images[i].baseFilename(), params.images[i].scene(), params.images[i].columns(), params.images[i].rows(), isAnim);
+        params.images[i].label(isAnim ? "T" : "F");
     }
 
     std::map<std::string, int> used_times;
     std::set<std::string> output_names;
-    for (unsigned int i = 0; i < eparams.images.size(); i++)
+    for (unsigned int i = 0; i < params.images.size(); i++)
     {
-        std::string filename = eparams.images[i].baseFilename();
+        std::string filename = params.images[i].baseFilename();
         Chop(filename);
         int last = filename.rfind('.');
         filename = Sanitize(filename.substr(0, last));
@@ -511,7 +529,7 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
         output_names.insert(filename);
         if (logging)
             printf("file: %s\n", filename.c_str());
-        eparams.names.push_back(filename);
+        params.names.push_back(filename);
     }
 
     return true;
@@ -519,56 +537,41 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
 
 bool BrandonToolsApp::DoExportImages()
 {
-    if (eparams.images.size() > 1)
+    std::vector<Image16Bpp> images;
+    for (unsigned int i = 0; i < params.images.size(); i++)
     {
-        switch (eparams.mode)
-        {
-            case MODE0:
-                printf("NOT IMPLEMENTED YET SILLY");
-                return false;
-            case MODE3:
-                DoMode3Multi(eparams.images, eparams);
-                break;
-            case MODE4:
-                DoMode4Multi(eparams.images, eparams);
-                break;
-            case SPRITES:
-                printf("NOT IMPLEMENTED YET SILLY");
-                return false;
-            case TILES:
-                DoTilesetExport(eparams.images, eparams);
-                break;
-            default:
-                printf("No mode specified image not exported");
-                return false;
-        }
+        images.push_back(Image16Bpp(params.images[i], params.names[i]));
     }
-    else
+
+    std::vector<Image16Bpp> tilesets;
+    for (unsigned int i = 0; i < params.tileset.size(); i++)
     {
-        switch (eparams.mode)
-        {
-            case MODE0:
-                if (bpp == 4)
-                    DoMode0_4bpp(eparams.images[0], eparams);
-                else if (bpp == 8)
-                    DoMode0_8bpp(eparams.images[0], eparams);
-                break;
-            case MODE3:
-                DoMode3(eparams.images[0], eparams);
-                break;
-            case MODE4:
-                DoMode4(eparams.images[0], eparams);
-                break;
-            case SPRITES:
-                printf("NOT IMPLEMENTED YET SILLY");
-                return false;
-            case TILES:
-                DoTilesetExport(eparams.images, eparams);
-                break;
-            default:
-                printf("No mode specified image not exported");
-                return false;
-        }
+        tilesets.push_back(Image16Bpp(params.tileset[i], ""));
+    }
+
+    switch (params.mode)
+    {
+        case MODE0:
+            DoMode0(images);
+            break;
+        case MODE3:
+            DoMode3(images);
+            break;
+        case MODE4:
+            DoMode4(images);
+            break;
+        case SPRITES:
+            printf("NOT IMPLEMENTED YET SILLY");
+            return false;
+        case TILES:
+            DoTilesetExport(images);
+            break;
+        case MAP:
+            DoMapExport(images, tilesets);
+            break;
+        default:
+            printf("No mode specified image not exported");
+            return false;
     }
 
     return true;
@@ -596,7 +599,7 @@ int BrandonToolsApp::OnRun()
     if (!DoExportImages())
         return EXIT_FAILURE;
 
-    printf("File exported successfully as %s.c and %s.h\n", eparams.name.c_str(), eparams.name.c_str());
+    printf("File exported successfully as %s.c and %s.h\n", params.name.c_str(), params.name.c_str());
     printf("The image (unless otherwise specified via command line) should be located in the current working directory (use ls and pwd)\n");
 
     return EXIT_SUCCESS;

@@ -1,6 +1,8 @@
 #ifndef FORTUNES_HPP
 #define FORTUNES_HPP
 
+#include <string>
+
 #define QUOTES 149
 extern const std::string quotes[QUOTES];
 

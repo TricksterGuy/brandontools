@@ -1,53 +1,18 @@
-#include <limits>
+#include "mediancut.hpp"
+
 #include <cfloat>
-#include <queue>
-#include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <functional>
+#include <limits>
 #include <list>
-#include "cpercep.hpp"
-#include "mediancut.hpp"
+#include <map>
+#include <queue>
 
 class BoxCompare;
 
 static void CutBoxes(std::priority_queue<Box, std::vector<Box>, BoxCompare>& queue, std::list<Box>& removed, unsigned int desiredColors);
 static void SwapQueues(std::priority_queue<Box, std::vector<Box>, BoxCompare>& q1, std::priority_queue<Box, std::vector<Box>, BoxCompare >& q2);
-
-
-class ColorCompare
-{
-    public:
-        ColorCompare(int index)
-        {
-            this->index = index;
-        }
-        bool operator()(Color left, Color right)
-        {
-            bool less;
-            switch(index)
-            {
-                case 0:
-                    less = left.x < right.x;
-                    if (left.x == right.x) less = left.y < right.y;
-                    if (left.x == right.x && left.y == right.y) less = left.z < right.z;
-                    break;
-                case 1:
-                    less = left.y < right.y;
-                    if (left.y == right.y) less = left.x < right.x;
-                    if (left.x == right.x && left.y == right.y) less = left.z < right.z;
-                    break;
-                case 2:
-                    less = left.z < right.z;
-                    if (left.z == right.z) less = left.x < right.x;
-                    if (left.x == right.x && left.z == right.z) less = left.y < right.y;
-                    break;
-                default:
-                    less = false;
-            }
-            return less;
-        }
-        int index;
-};
 
 class BoxCompare
 {
@@ -76,226 +41,6 @@ class BoxCompare
         }
         int mode;
 };
-
-/** @brief Color
-  *
-  * @todo: document this function
-  */
-Color::Color()
-{
-    x = y = z = 0;
-}
-
-/** @brief Color
-  *
-  * @todo: document this function
-  */
-Color::Color(double x, double y, double z)
-{
-    this->x = x;
-    this->y = y;
-    this->z = z;
-}
-
-/** operator<
-  *
-  *
-  */
-bool Color::operator<(const Color& right) const
-{
-    bool less;
-    less = x < right.x;
-    if (x == right.x) less = y < right.y;
-    if (x == right.x && y == right.y) less = z < right.z;
-    return less;
-}
-
-/** @brief Set
-  *
-  * @todo: document this function
-  */
-void Color::Set(int a, int b, int c)
-{
-    x = a;
-    y = b;
-    z = c;
-}
-
-/** @brief Get
-  *
-  * @todo: document this function
-  */
-void Color::Get(int& a, int& b, int& c) const
-{
-    a = x;
-    b = y;
-    c = z;
-}
-
-/** @brief Distance
-  *
-  * @todo: document this function
-  */
-double Color::Distance(const Color& other) const
-{
-    double ox, oy, oz;
-    double l, a, b, ol, oa, ob;
-
-    ox = other.x;
-    oy = other.y;
-    oz = other.z;
-
-    cpercep_rgb_to_space(x * 255.0 / 31, y * 255.0 / 31, z * 255.0 / 31, &l, &a, &b);
-    cpercep_rgb_to_space(ox * 255.0 / 31, oy * 255.0 / 31, oz * 255.0 / 31, &ol, &oa, &ob);
-
-    return cpercep_distance_space(l, a, b, ol, oa, ob);
-
-}
-
-/** Histogram
-  *
-  * Creates a histogram from the image.
-  */
-Histogram::Histogram(const std::vector<Color>& image)
-{
-    std::vector<Color>::const_iterator i;
-    std::map<Color, size_t>::const_iterator j;
-    for (i = image.begin(); i != image.end(); ++i)
-        data[*i] += 1;
-    for (j = data.begin(); j != data.end(); ++j)
-        colors.push_back(j->first);
-}
-
-/** Histogram
-  *
-  * Creates a histogram
-  */
-Histogram::Histogram(Histogram& hist, const std::vector<Color>& keys)
-{
-    std::copy(keys.begin(), keys.end(), colors.begin());
-    std::vector<Color>::const_iterator i;
-    for (i = colors.begin(); i != colors.end(); ++i)
-        data[*i] = hist.data[*i];
-
-}
-
-/** @brief Histogram
-  *
-  * @todo: document this function
-  */
- Histogram::Histogram(const std::map<Color, size_t>& hist, const std::vector<Color>& keys)
-{
-    data = hist;
-    colors = keys;
-}
-
-/** @brief GetColors
-  *
-  * Gets the colors associated with this histogram
-  */
-const std::vector<Color>& Histogram::GetColors() const
-{
-    return colors;
-}
-
-/** @brief GetData
-  *
-  * Gets the data associated with this histogram.
-  */
-const std::map<Color, size_t>& Histogram::GetData() const
-{
-    return data;
-}
-
-/** Population
-  *
-  * Gets the population of his histogram.
-  */
-size_t Histogram::Population() const
-{
-    size_t total = 0;
-    std::map<Color, size_t>::const_iterator i;
-    for (i = data.begin(); i != data.end(); ++i)
-        total += i->second;
-    return total;
-}
-
-/** @brief Size
-  *
-  * @todo: document this function
-  */
-size_t Histogram::Size() const
-{
-    return colors.size();
-}
-
-/** GetAverageColor
-  *
-  * Gets the average color represented by this histogram.
-  */
-Color Histogram::GetAverageColor() const
-{
-    Color out;
-    double sumx = 0, sumy = 0, sumz = 0, sump = 0;
-    std::map<Color, size_t>::const_iterator i;
-    for (i = data.begin(); i != data.end(); ++i)
-    {
-        Color current = i->first;
-        size_t population = i->second;
-        sumx += current.x * population;
-        sumy += current.y * population;
-        sumz += current.z * population;
-        sump += population;
-    }
-
-    out.x = sumx / sump;
-    out.y = sumy / sump;
-    out.z = sumz / sump;
-    return out;
-}
-
-/** @brief Split
-  *
-  * @todo: document this function
-  */
-void Histogram::Split(std::map<Color, size_t>& otherData, std::vector<Color>& otherColors, ColorCompare& comp)
-{
-    size_t population = Population();
-
-    std::sort(colors.begin(), colors.end(), comp);
-
-    // Perform Split finding the median color
-    size_t median = population / 2;
-    size_t fill = 0;
-    while (fill < median)
-    {
-        Color current = colors[0];
-        if (fill + data[current] <= median)
-        {
-            fill += data[current];
-            otherColors.push_back(current);
-            otherData[current] = data[current];
-            data.erase(current);
-            colors.erase(colors.begin());
-        }
-        else
-        {
-            // If we can get more than half of this color take all of it. But only if it is not the only color remaining.
-            if (median - fill > median / 2 && colors.size() > 1)
-            {
-                fill += data[current];
-                otherColors.push_back(current);
-                otherData[current] = data[current];
-                data.erase(current);
-                colors.erase(colors.begin());
-            }
-            else
-            {
-                fill = median;
-            }
-        }
-    }
-}
 
 /** Box
   *
@@ -433,23 +178,18 @@ Color Box::GetAverageColor() const
     return data.GetAverageColor();
 }
 
-
-
-void MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std::vector<Color>& palette, const int weights[4])
+bool MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std::vector<Color>& palette, const int weights[4])
 {
     Histogram hist(image);
     // If we have fewer colors than desired
-
     if (hist.Size() <= desiredColors)
     {
         const std::vector<Color>& colors = hist.GetColors();
         unsigned int size = colors.size();
         palette.resize(size);
         std::copy(colors.begin(), colors.end(), palette.begin());
-        printf("[INFO] Not running image quantization algorithm (image has less than %d colors so those colors will be used)\n", desiredColors);
-        return;
+        return false;
     }
-    printf("[INFO] Running image quantization algorithm\n");
     // Volume Queue
     std::priority_queue<Box, std::vector<Box>, BoxCompare> queue0(BoxCompare(0));
     // Population Queue
@@ -494,6 +234,8 @@ void MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std:
         palette.push_back(color);
         //printf("%f %f %f\n", color.x, color.y, color.z);
     }
+
+    return true;
 }
 
 

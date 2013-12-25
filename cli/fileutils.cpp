@@ -1,4 +1,5 @@
 #include "fileutils.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -17,15 +18,41 @@ void InitFiles(std::ofstream& file_c, std::ofstream& file_h, const std::string& 
     }
 }
 
-void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const void* data,
-                     unsigned int size, unsigned short (*getData)(const void*, unsigned int, const void*),
-                     unsigned short items_per_row, const void* exData)
+void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<unsigned short>& data, unsigned int items_per_row)
 {
+    file << "const unsigned short " << name << append << "[" << data.size() << "] =\n{\n\t";
+    for (unsigned int i = 0; i < data.size(); i++)
+    {
+        unsigned short data_read = data[i];
+        WriteElement(file, data_read, data.size(), i, items_per_row);
+    }
+    file << "\n};\n";
+}
+
+void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<unsigned char>& data, unsigned int items_per_row)
+{
+    unsigned int size = data.size() / 2;
     file << "const unsigned short " << name << append << "[" << size << "] =\n{\n\t";
     for (unsigned int i = 0; i < size; i++)
     {
-        unsigned short data_read = getData(data, i, exData);
-        WriteElement(file, data_read, size, i, items_per_row);
+        unsigned char data_read1 = data[2 * i];
+        unsigned char data_read2 = data[2 * i + 1];
+        unsigned short shrt = data_read2 << 8 | data_read1;
+        WriteElement(file, shrt, size, i, items_per_row);
+    }
+    file << "\n};\n";
+}
+
+void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<Color>& data, unsigned int items_per_row)
+{
+    int x, y, z;
+    file << "const unsigned short " << name << append << "[" << data.size() << "] =\n{\n\t";
+    for (unsigned int i = 0; i < data.size(); i++)
+    {
+        const Color& color = data[i];
+        color.Get(x, y, z);
+        short data_read = x | (y << 5) | (z << 10);
+        WriteElement(file, data_read, data.size(), i, items_per_row);
     }
     file << "\n};\n";
 }
@@ -33,7 +60,7 @@ void WriteShortArray(std::ostream& file, const std::string& name, const std::str
 void WriteElement(std::ostream& file, unsigned short data, unsigned int size, unsigned int counter, unsigned int items_per_row)
 {
     char buffer[7];
-    sprintf(buffer, "0x%04x", data);
+    snprintf(buffer, 7, "0x%04x", data);
     WriteElement(file, buffer, size, counter, items_per_row);
 }
 
@@ -49,15 +76,13 @@ void WriteElement(std::ostream& file, const std::string& data, unsigned int size
     }
 }
 
-void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::string& append, const void* data,
-                        unsigned int size, std::string (*getData)(const void*, unsigned int, const void*),
-                        unsigned short items_per_row, const void* exData)
+void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<std::string>& names, unsigned short items_per_row)
 {
-    file << "const unsigned short* " << name << append << "[" << size << "] =\n{\n\t";
-    for (unsigned int i = 0; i < size; i++)
+    file << "const unsigned short* " << name << append << "[" << names.size() << "] =\n{\n\t";
+    for (unsigned int i = 0; i < names.size(); i++)
     {
-        std::string data_read = getData(data, i, exData);
-        WriteElement(file, data_read, size, i, items_per_row);
+        const std::string& data_read = names[i];
+        WriteElement(file, data_read, names.size(), i, items_per_row);
     }
     file << "\n};\n";
 }

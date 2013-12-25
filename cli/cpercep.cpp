@@ -53,9 +53,9 @@ from the Author.
 
   TODO: document functions, rename erroneously-named arguments
 */
+#include "cpercep.hpp"
 
 #include <cmath>
-#include "cpercep.hpp"
 #include <cstdio>
 
 
@@ -153,23 +153,23 @@ static double powtable[256];
 static void
 init_powtable(const double gamma)
 {
-  int i;
+    int i;
 
 #ifndef SRGB
-  /* pure gamma function */
-  for (i=0; i<256; i++)
+    /* pure gamma function */
+    for (i=0; i<256; i++)
     {
-      powtable[i] = pow((i)/255.0F, gamma);
+        powtable[i] = pow((i)/255.0F, gamma);
     }
 #else
-  /* sRGB gamma curve */
-  for (i=0; i<11 /* 0.03928 * 255 */; i++)
+    /* sRGB gamma curve */
+    for (i=0; i<11 /* 0.03928 * 255 */; i++)
     {
-      powtable[i] = (i) / (255.0F * 12.92F);
+        powtable[i] = (i) / (255.0F * 12.92F);
     }
-  for (; i<256; i++)
+    for (; i<256; i++)
     {
-      powtable[i] = pow( (((i) / 255.0F) + 0.055F) / 1.055F, 2.4F);
+        powtable[i] = pow( (((i) / 255.0F) + 0.055F) / 1.055F, 2.4F);
     }
 #endif
 }
@@ -183,86 +183,86 @@ static CMatrix Mrgb_to_xyz, Mxyz_to_rgb;
 static int
 Minvert (CMatrix src, CMatrix dest)
 {
-  double det;
+    double det;
 
-  dest[0][0] = src[1][1] * src[2][2] - src[1][2] * src[2][1];
-  dest[0][1] = src[0][2] * src[2][1] - src[0][1] * src[2][2];
-  dest[0][2] = src[0][1] * src[1][2] - src[0][2] * src[1][1];
-  dest[1][0] = src[1][2] * src[2][0] - src[1][0] * src[2][2];
-  dest[1][1] = src[0][0] * src[2][2] - src[0][2] * src[2][0];
-  dest[1][2] = src[0][2] * src[1][0] - src[0][0] * src[1][2];
-  dest[2][0] = src[1][0] * src[2][1] - src[1][1] * src[2][0];
-  dest[2][1] = src[0][1] * src[2][0] - src[0][0] * src[2][1];
-  dest[2][2] = src[0][0] * src[1][1] - src[0][1] * src[1][0];
+    dest[0][0] = src[1][1] * src[2][2] - src[1][2] * src[2][1];
+    dest[0][1] = src[0][2] * src[2][1] - src[0][1] * src[2][2];
+    dest[0][2] = src[0][1] * src[1][2] - src[0][2] * src[1][1];
+    dest[1][0] = src[1][2] * src[2][0] - src[1][0] * src[2][2];
+    dest[1][1] = src[0][0] * src[2][2] - src[0][2] * src[2][0];
+    dest[1][2] = src[0][2] * src[1][0] - src[0][0] * src[1][2];
+    dest[2][0] = src[1][0] * src[2][1] - src[1][1] * src[2][0];
+    dest[2][1] = src[0][1] * src[2][0] - src[0][0] * src[2][1];
+    dest[2][2] = src[0][0] * src[1][1] - src[0][1] * src[1][0];
 
-  det =
-    src[0][0] * dest[0][0] +
-    src[0][1] * dest[1][0] +
-    src[0][2] * dest[2][0];
+    det =
+        src[0][0] * dest[0][0] +
+        src[0][1] * dest[1][0] +
+        src[0][2] * dest[2][0];
 
-  if (det <= 0.0F)
+    if (det <= 0.0F)
     {
 #ifdef SANITY
-      printf("\n\007 XXXX det: %f\n", det);
+        printf("\n\007 XXXX det: %f\n", det);
 #endif
-      return 0;
+        return 0;
     }
 
-  dest[0][0] /= det;
-  dest[0][1] /= det;
-  dest[0][2] /= det;
-  dest[1][0] /= det;
-  dest[1][1] /= det;
-  dest[1][2] /= det;
-  dest[2][0] /= det;
-  dest[2][1] /= det;
-  dest[2][2] /= det;
+    dest[0][0] /= det;
+    dest[0][1] /= det;
+    dest[0][2] /= det;
+    dest[1][0] /= det;
+    dest[1][1] /= det;
+    dest[1][2] /= det;
+    dest[2][0] /= det;
+    dest[2][1] /= det;
+    dest[2][2] /= det;
 
-  return 1;
+    return 1;
 }
 
 
 static void
 rgbxyzrgb_init(void)
 {
-  init_powtable (ASSUMED_GAMMA);
+    init_powtable (ASSUMED_GAMMA);
 
-  xnn = lxn / lyn;
-  /* ynn taken as 1.0 */
-  znn = (1.0F - (lxn + lyn)) / lyn;
+    xnn = lxn / lyn;
+    /* ynn taken as 1.0 */
+    znn = (1.0F - (lxn + lyn)) / lyn;
 
-  {
-    CMatrix MRC, MRCi;
-    double C1,C2,C3;
+    {
+        CMatrix MRC, MRCi;
+        double C1,C2,C3;
 
-    MRC[0][0] = pxr;
-    MRC[0][1] = pxg;
-    MRC[0][2] = pxb;
-    MRC[1][0] = pyr;
-    MRC[1][1] = pyg;
-    MRC[1][2] = pyb;
-    MRC[2][0] = 1.0F - (pxr + pyr);
-    MRC[2][1] = 1.0F - (pxg + pyg);
-    MRC[2][2] = 1.0F - (pxb + pyb);
+        MRC[0][0] = pxr;
+        MRC[0][1] = pxg;
+        MRC[0][2] = pxb;
+        MRC[1][0] = pyr;
+        MRC[1][1] = pyg;
+        MRC[1][2] = pyb;
+        MRC[2][0] = 1.0F - (pxr + pyr);
+        MRC[2][1] = 1.0F - (pxg + pyg);
+        MRC[2][2] = 1.0F - (pxb + pyb);
 
-    Minvert (MRC, MRCi);
+        Minvert (MRC, MRCi);
 
-    C1 = MRCi[0][0]*xnn + MRCi[0][1] + MRCi[0][2]*znn;
-    C2 = MRCi[1][0]*xnn + MRCi[1][1] + MRCi[1][2]*znn;
-    C3 = MRCi[2][0]*xnn + MRCi[2][1] + MRCi[2][2]*znn;
+        C1 = MRCi[0][0]*xnn + MRCi[0][1] + MRCi[0][2]*znn;
+        C2 = MRCi[1][0]*xnn + MRCi[1][1] + MRCi[1][2]*znn;
+        C3 = MRCi[2][0]*xnn + MRCi[2][1] + MRCi[2][2]*znn;
 
-    Mrgb_to_xyz[0][0] = MRC[0][0] * C1;
-    Mrgb_to_xyz[0][1] = MRC[0][1] * C2;
-    Mrgb_to_xyz[0][2] = MRC[0][2] * C3;
-    Mrgb_to_xyz[1][0] = MRC[1][0] * C1;
-    Mrgb_to_xyz[1][1] = MRC[1][1] * C2;
-    Mrgb_to_xyz[1][2] = MRC[1][2] * C3;
-    Mrgb_to_xyz[2][0] = MRC[2][0] * C1;
-    Mrgb_to_xyz[2][1] = MRC[2][1] * C2;
-    Mrgb_to_xyz[2][2] = MRC[2][2] * C3;
+        Mrgb_to_xyz[0][0] = MRC[0][0] * C1;
+        Mrgb_to_xyz[0][1] = MRC[0][1] * C2;
+        Mrgb_to_xyz[0][2] = MRC[0][2] * C3;
+        Mrgb_to_xyz[1][0] = MRC[1][0] * C1;
+        Mrgb_to_xyz[1][1] = MRC[1][1] * C2;
+        Mrgb_to_xyz[1][2] = MRC[1][2] * C3;
+        Mrgb_to_xyz[2][0] = MRC[2][0] * C1;
+        Mrgb_to_xyz[2][1] = MRC[2][1] * C2;
+        Mrgb_to_xyz[2][2] = MRC[2][2] * C3;
 
-    Minvert (Mrgb_to_xyz, Mxyz_to_rgb);
-  }
+        Minvert (Mrgb_to_xyz, Mxyz_to_rgb);
+    }
 }
 
 
@@ -271,13 +271,13 @@ xyz_to_rgb (double *inx_outr,
             double *iny_outg,
             double *inz_outb)
 {
-  const double x = *inx_outr;
-  const double y = *iny_outg;
-  const double z = *inz_outb;
+    const double x = *inx_outr;
+    const double y = *iny_outg;
+    const double z = *inz_outb;
 
-  *inx_outr = Mxyz_to_rgb[0][0]*x + Mxyz_to_rgb[0][1]*y + Mxyz_to_rgb[0][2]*z;
-  *iny_outg = Mxyz_to_rgb[1][0]*x + Mxyz_to_rgb[1][1]*y + Mxyz_to_rgb[1][2]*z;
-  *inz_outb = Mxyz_to_rgb[2][0]*x + Mxyz_to_rgb[2][1]*y + Mxyz_to_rgb[2][2]*z;
+    *inx_outr = Mxyz_to_rgb[0][0]*x + Mxyz_to_rgb[0][1]*y + Mxyz_to_rgb[0][2]*z;
+    *iny_outg = Mxyz_to_rgb[1][0]*x + Mxyz_to_rgb[1][1]*y + Mxyz_to_rgb[1][2]*z;
+    *inz_outb = Mxyz_to_rgb[2][0]*x + Mxyz_to_rgb[2][1]*y + Mxyz_to_rgb[2][2]*z;
 }
 
 
@@ -286,26 +286,26 @@ rgb_to_xyz (double *inr_outx,
             double *ing_outy,
             double *inb_outz)
 {
-  const double r = *inr_outx;
-  const double g = *ing_outy;
-  const double b = *inb_outz;
+    const double r = *inr_outx;
+    const double g = *ing_outy;
+    const double b = *inb_outz;
 
-  *inr_outx = Mrgb_to_xyz[0][0]*r + Mrgb_to_xyz[0][1]*g + Mrgb_to_xyz[0][2]*b;
-  *ing_outy = Mrgb_to_xyz[1][0]*r + Mrgb_to_xyz[1][1]*g + Mrgb_to_xyz[1][2]*b;
-  *inb_outz = Mrgb_to_xyz[2][0]*r + Mrgb_to_xyz[2][1]*g + Mrgb_to_xyz[2][2]*b;
+    *inr_outx = Mrgb_to_xyz[0][0]*r + Mrgb_to_xyz[0][1]*g + Mrgb_to_xyz[0][2]*b;
+    *ing_outy = Mrgb_to_xyz[1][0]*r + Mrgb_to_xyz[1][1]*g + Mrgb_to_xyz[1][2]*b;
+    *inb_outz = Mrgb_to_xyz[2][0]*r + Mrgb_to_xyz[2][1]*g + Mrgb_to_xyz[2][2]*b;
 }
 
 
 static inline double
 ffunc(const double t)
 {
-  if (t > 0.008856F)
+    if (t > 0.008856F)
     {
-      return (cbrt(t));
+        return (cbrt(t));
     }
-  else
+    else
     {
-      return (7.787F * t + 16.0F/116.0F);
+        return (7.787F * t + 16.0F/116.0F);
     }
 }
 
@@ -313,13 +313,13 @@ ffunc(const double t)
 static inline double
 ffunc_inv(const double t)
 {
-  if (t > 0.206893F)
+    if (t > 0.206893F)
     {
-      return (t * t * t);
+        return (t * t * t);
     }
-  else
+    else
     {
-      return ((t - 16.0F/116.0F) / 7.787F);
+        return ((t - 16.0F/116.0F) / 7.787F);
     }
 }
 
@@ -329,47 +329,47 @@ xyz_to_lab (double *inx,
             double *iny,
             double *inz)
 {
-  double L,a,b;
-  double ffuncY;
-  const double X = *inx;
-  const double Y = *iny;
-  const double Z = *inz;
+    double L,a,b;
+    double ffuncY;
+    const double X = *inx;
+    const double Y = *iny;
+    const double Z = *inz;
 
-  if (Y > 0.0F)
+    if (Y > 0.0F)
     {
-      if (Y > 0.008856F)
+        if (Y > 0.008856F)
         {
-          L = (116.0F * cbrt(Y)) - 16.0F;
+            L = (116.0F * cbrt(Y)) - 16.0F;
         }
-      else
+        else
         {
-          L = (Y * 903.3F);
+            L = (Y * 903.3F);
         }
 
 #ifdef SANITY
-      if (L < 0.0F)
+        if (L < 0.0F)
         {
-          printf(" <eek1>%f \007",(float)L);
+            printf(" <eek1>%f \007",(float)L);
         }
 
-      if (L > 100.0F)
+        if (L > 100.0F)
         {
-          printf(" <eek2>%f \007",(float)L);
+            printf(" <eek2>%f \007",(float)L);
         }
 #endif
     }
-  else
+    else
     {
-      L = 0.0;
+        L = 0.0;
     }
 
-  ffuncY = ffunc(Y);
-  a = 500.0F * (ffunc(X/xnn) - ffuncY);
-  b = 200.0F * (ffuncY - ffunc(Z/znn));
+    ffuncY = ffunc(Y);
+    a = 500.0F * (ffunc(X/xnn) - ffuncY);
+    b = 200.0F * (ffuncY - ffunc(Z/znn));
 
-  *inx = L;
-  *iny = a;
-  *inz = b;
+    *inx = L;
+    *iny = a;
+    *inz = b;
 }
 
 
@@ -378,52 +378,52 @@ lab_to_xyz (double *inl,
             double *ina,
             double *inb)
 {
-  double X,Y,Z;
-  double P;
-  const double L = *inl;
-  const double a = *ina;
-  const double b = *inb;
+    double X,Y,Z;
+    double P;
+    const double L = *inl;
+    const double a = *ina;
+    const double b = *inb;
 
-  if (L > LRAMP)
+    if (L > LRAMP)
     {
-      P = Y = (L + 16.0F) / 116.0F;
-      Y = Y * Y * Y;
+        P = Y = (L + 16.0F) / 116.0F;
+        Y = Y * Y * Y;
     }
-  else
+    else
     {
-      Y = L / 903.3F;
-      P = 7.787F * Y + 16.0F/116.0F;
+        Y = L / 903.3F;
+        P = 7.787F * Y + 16.0F/116.0F;
     }
 
-  X = (P + a / 500.0F);
-  X = xnn * ffunc_inv(X);
-  Z = (P - b / 200.0F);
-  Z = znn * ffunc_inv(Z);
+    X = (P + a / 500.0F);
+    X = xnn * ffunc_inv(X);
+    Z = (P - b / 200.0F);
+    Z = znn * ffunc_inv(Z);
 
 #ifdef SANITY
-  if (X<-0.00000F)
+    if (X<-0.00000F)
     {
-      if (X<-0.0001F)
-        printf("{badX %f {%f,%f,%f}}",X,L,a,b);
-      X = 0.0F;
+        if (X<-0.0001F)
+            printf("{badX %f {%f,%f,%f}}",X,L,a,b);
+        X = 0.0F;
     }
-  if (Y<-0.00000F)
+    if (Y<-0.00000F)
     {
-      if (Y<-0.0001F)
-        printf("{badY %f}",Y);
-      Y = 0.0F;
+        if (Y<-0.0001F)
+            printf("{badY %f}",Y);
+        Y = 0.0F;
     }
-  if (Z<-0.00000F)
+    if (Z<-0.00000F)
     {
-      if (Z<-0.1F)
-        printf("{badZ %f}",Z);
-      Z = 0.0F;
+        if (Z<-0.1F)
+            printf("{badZ %f}",Z);
+        Z = 0.0F;
     }
 #endif
 
-  *inl = X;
-  *ina = Y;
-  *inb = Z;
+    *inl = X;
+    *ina = Y;
+    *inb = Z;
 }
 
 
@@ -432,12 +432,12 @@ lab_to_xyz (double *inl,
 void
 cpercep_init (void)
 {
-  static bool initialized = false;
+    static bool initialized = false;
 
-  if (! initialized)
+    if (! initialized)
     {
-      rgbxyzrgb_init();
-      initialized = true;
+        rgbxyzrgb_init();
+        initialized = true;
     }
 }
 
@@ -451,74 +451,74 @@ cpercep_rgb_to_space (double  inr,
 {
 #ifdef APPROX
 #ifdef SANITY
-  /* ADM extra sanity */
-  if ((inr) > 255.0F ||
-      (ing) > 255.0F ||
-      (inb) > 255.0F ||
-      (inr) < -0.0F ||
-      (ing) < -0.0F ||
-      (inb) < -0.0F
-      )
-    //abort();
+    /* ADM extra sanity */
+    if ((inr) > 255.0F ||
+            (ing) > 255.0F ||
+            (inb) > 255.0F ||
+            (inr) < -0.0F ||
+            (ing) < -0.0F ||
+            (inb) < -0.0F
+       )
+        //abort();
 #endif /* SANITY */
-  inr = powtable[(int)inr];
-  ing = powtable[(int)ing];
-  inb = powtable[(int)inb];
+        inr = powtable[(int)inr];
+    ing = powtable[(int)ing];
+    inb = powtable[(int)inb];
 #else
 #ifdef SRGB
-  /* sRGB gamma curve */
-  if (inr <= (0.03928F * 255.0F))
-      inr = inr / (255.0F * 12.92F);
-  else
-      inr = pow( (inr + (0.055F * 255.0F)) / (1.055F * 255.0F), 2.4F);
+    /* sRGB gamma curve */
+    if (inr <= (0.03928F * 255.0F))
+        inr = inr / (255.0F * 12.92F);
+    else
+        inr = pow( (inr + (0.055F * 255.0F)) / (1.055F * 255.0F), 2.4F);
 
-  if (ing <= (0.03928F * 255.0F))
-      ing = ing / (255.0F * 12.92F);
-  else
-      ing = pow( (ing + (0.055F * 255.0F)) / (1.055F * 255.0F), 2.4F);
+    if (ing <= (0.03928F * 255.0F))
+        ing = ing / (255.0F * 12.92F);
+    else
+        ing = pow( (ing + (0.055F * 255.0F)) / (1.055F * 255.0F), 2.4F);
 
-  if (inb <= (0.03928F * 255.0F))
-      inb = inb / (255.0F * 12.92F);
-  else
-      inb = pow( (inb + (0.055F * 255.0F)) / (1.055F * 255.0F), 2.4F);
+    if (inb <= (0.03928F * 255.0F))
+        inb = inb / (255.0F * 12.92F);
+    else
+        inb = pow( (inb + (0.055F * 255.0F)) / (1.055F * 255.0F), 2.4F);
 #else
-  /* pure gamma function */
-  inr = pow((inr)/255.0F, ASSUMED_GAMMA);
-  ing = pow((ing)/255.0F, ASSUMED_GAMMA);
-  inb = pow((inb)/255.0F, ASSUMED_GAMMA);
+    /* pure gamma function */
+    inr = pow((inr)/255.0F, ASSUMED_GAMMA);
+    ing = pow((ing)/255.0F, ASSUMED_GAMMA);
+    inb = pow((inb)/255.0F, ASSUMED_GAMMA);
 #endif /* SRGB */
 #endif /* APPROX */
 
 #ifdef SANITY
-  /* ADM extra sanity */
-  if ((inr) > 1.0F ||
-      (ing) > 1.0F ||
-      (inb) > 1.0F ||
-      (inr) < 0.0F ||
-      (ing) < 0.0F ||
-      (inb) < 0.0F
-      )
+    /* ADM extra sanity */
+    if ((inr) > 1.0F ||
+            (ing) > 1.0F ||
+            (inb) > 1.0F ||
+            (inr) < 0.0F ||
+            (ing) < 0.0F ||
+            (inb) < 0.0F
+       )
     {
-      printf("%%");
-      /* abort(); */
+        printf("%%");
+        /* abort(); */
     }
 #endif /* SANITY */
 
-  rgb_to_xyz(&inr, &ing, &inb);
+    rgb_to_xyz(&inr, &ing, &inb);
 
 #ifdef SANITY
-  if (inr < 0.0F || ing < 0.0F || inb < 0.0F)
+    if (inr < 0.0F || ing < 0.0F || inb < 0.0F)
     {
-      printf(" [BAD2 XYZ: %f,%f,%f]\007 ",
-              inr,ing,inb);
+        printf(" [BAD2 XYZ: %f,%f,%f]\007 ",
+               inr,ing,inb);
     }
 #endif /* SANITY */
 
-  xyz_to_lab(&inr, &ing, &inb);
+    xyz_to_lab(&inr, &ing, &inb);
 
-  *outr = inr;
-  *outg = ing;
-  *outb = inb;
+    *outr = inr;
+    *outg = ing;
+    *outb = inb;
 }
 
 
@@ -530,47 +530,47 @@ cpercep_space_to_rgb (double  inr,
                       double *outg,
                       double *outb)
 {
-  lab_to_xyz(&inr, &ing, &inb);
+    lab_to_xyz(&inr, &ing, &inb);
 
 #ifdef SANITY
-  if (inr<-0.0F || ing<-0.0F || inb<-0.0F)
+    if (inr<-0.0F || ing<-0.0F || inb<-0.0F)
     {
-      printf(" [BAD1 XYZ: %f,%f,%f]\007 ",
-              inr,ing,inb);
+        printf(" [BAD1 XYZ: %f,%f,%f]\007 ",
+               inr,ing,inb);
     }
 #endif
 
-  xyz_to_rgb(&inr, &ing, &inb);
+    xyz_to_rgb(&inr, &ing, &inb);
 
-  /* yes, essential.  :( */
-  inr = CLAMP(inr,0.0F,1.0F);
-  ing = CLAMP(ing,0.0F,1.0F);
-  inb = CLAMP(inb,0.0F,1.0F);
+    /* yes, essential.  :( */
+    inr = CLAMP(inr,0.0F,1.0F);
+    ing = CLAMP(ing,0.0F,1.0F);
+    inb = CLAMP(inb,0.0F,1.0F);
 
 #ifdef SRGB
-  if (inr <= 0.0030402477F)
-    inr = inr * (12.92F * 255.0F);
-  else
-    inr = pow(inr, 1.0F/2.4F) * (1.055F * 255.0F) - (0.055F * 255.0F);
+    if (inr <= 0.0030402477F)
+        inr = inr * (12.92F * 255.0F);
+    else
+        inr = pow(inr, 1.0F/2.4F) * (1.055F * 255.0F) - (0.055F * 255.0F);
 
-  if (ing <= 0.0030402477F)
-    ing = ing * (12.92F * 255.0F);
-  else
-    ing = pow(ing, 1.0F/2.4F) * (1.055F * 255.0F) - (0.055F * 255.0F);
+    if (ing <= 0.0030402477F)
+        ing = ing * (12.92F * 255.0F);
+    else
+        ing = pow(ing, 1.0F/2.4F) * (1.055F * 255.0F) - (0.055F * 255.0F);
 
-  if (inb <= 0.0030402477F)
-    inb = inb * (12.92F * 255.0F);
-  else
-    inb = pow(inb, 1.0F/2.4F) * (1.055F * 255.0F) - (0.055F * 255.0F);
+    if (inb <= 0.0030402477F)
+        inb = inb * (12.92F * 255.0F);
+    else
+        inb = pow(inb, 1.0F/2.4F) * (1.055F * 255.0F) - (0.055F * 255.0F);
 #else
-  inr = 255.0F * pow(inr, REV_GAMMA);
-  ing = 255.0F * pow(ing, REV_GAMMA);
-  inb = 255.0F * pow(inb, REV_GAMMA);
+    inr = 255.0F * pow(inr, REV_GAMMA);
+    ing = 255.0F * pow(ing, REV_GAMMA);
+    inb = 255.0F * pow(inb, REV_GAMMA);
 #endif
 
-  *outr = inr;
-  *outg = ing;
-  *outb = inb;
+    *outr = inr;
+    *outg = ing;
+    *outb = inb;
 }
 
 
@@ -581,7 +581,7 @@ const double
 xscaler(const double start, const double end,
         const double me, const double him)
 {
-  return start + ((end-start) * him) / (me + him);
+    return start + ((end-start) * him) / (me + him);
 }
 
 
@@ -591,37 +591,37 @@ mix_colours (const double L1, const double a1, const double b1,
              double *rtnL, double *rtna, double *rtnb,
              double mass1, double mass2)
 {
-  double w1, w2;
+    double w1, w2;
 
 #if 0
-  *rtnL = xscaler (L1, L2, mass1, mass2);
-  *rtna = xscaler (a1, a2, mass1, mass2);
-  *rtnb = xscaler (b1, b2, mass1, mass2);
+    *rtnL = xscaler (L1, L2, mass1, mass2);
+    *rtna = xscaler (a1, a2, mass1, mass2);
+    *rtnb = xscaler (b1, b2, mass1, mass2);
 #else
 
 #if 1
-  w1 = mass1 * L1;
-  w2 = mass2 * L2;
+    w1 = mass1 * L1;
+    w2 = mass2 * L2;
 #else
-  w1 = mass1 * (L1*L1*L1);
-  w2 = mass2 * (L2*L2*L2);
+    w1 = mass1 * (L1*L1*L1);
+    w2 = mass2 * (L2*L2*L2);
 #endif
 
-  *rtnL = xscaler (L1, L2, mass1, mass2);
+    *rtnL = xscaler (L1, L2, mass1, mass2);
 
-  if (w1 <= 0.0 &&
-      w2 <= 0.0)
+    if (w1 <= 0.0 &&
+            w2 <= 0.0)
     {
-      *rtna =
-        *rtnb = 0.0;
+        *rtna =
+            *rtnb = 0.0;
 #ifdef SANITY
-      /* printf("\007OUCH. "); */
+        /* printf("\007OUCH. "); */
 #endif
     }
-  else
+    else
     {
-      *rtna = xscaler(a1, a2, w1, w2);
-      *rtnb = xscaler(b1, b2, w1, w2);
+        *rtna = xscaler(a1, a2, w1, w2);
+        *rtnb = xscaler(b1, b2, w1, w2);
     }
 #endif
 }

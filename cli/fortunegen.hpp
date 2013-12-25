@@ -20,8 +20,6 @@ class FortuneGenerator
         FortuneGenerator();
         FortuneGenerator(const FortuneGenerator&);
         const FortuneGenerator& operator=(const FortuneGenerator& o);
-
 };
-
 
 #endif

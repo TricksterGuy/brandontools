@@ -1,5 +1,6 @@
-#include <string>
 #include "fortunes.hpp"
+
+#include <string>
 
 const std::string fortunes[FORTUNES] = {
 "\"Welcome\" is a powerful word.",
