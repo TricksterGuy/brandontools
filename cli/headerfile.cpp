@@ -25,7 +25,7 @@ void HeaderFile::Write(std::ostream& file)
         //TODO mode 4 and mode 0 handling.
         char buffer[7];
         sprintf(buffer, "0x%04x", (unsigned short) transparent_color);
-        WriteDefine(file, params.name, "_TRANSPARENT", buffer);
+        WriteDefine(file, params.name, "_TRANSPARENT", (mode == 3) ? buffer : "0x00");
         ok_newline = true;
     }
     if (params.offset)

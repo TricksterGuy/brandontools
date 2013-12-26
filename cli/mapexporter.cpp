@@ -21,6 +21,9 @@ void DoMapExport(const std::vector<Image16Bpp>& images, const std::vector<Image1
         // Form the tileset from the images given this is a dummy
         std::shared_ptr<Tileset> tileset(new Tileset(tilesets, "", params.bpp));
 
+        header.SetPalette(tileset->palette);
+        implementation.SetPalette(tileset->palette);
+
         for (const auto& image : images)
         {
             std::shared_ptr<Map> map_ptr(new Map(image, tileset));

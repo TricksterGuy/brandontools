@@ -23,6 +23,9 @@ void DoTilesetExport(const std::vector<Image16Bpp>& images)
         // Form the tileset and then add it to header and implementation
         std::shared_ptr<Tileset> tileset(new Tileset(images, params.name, params.bpp));
 
+        header.SetPalette(tileset->palette);
+        implementation.SetPalette(tileset->palette);
+
         header.AddTileset(tileset);
         implementation.AddTileset(tileset);
 

@@ -45,19 +45,14 @@ void ExportFile::Write(std::ostream& file)
     if (transparent_color != -1)
     {
         file << " * Transparent color (";
-        /// TODO fix this.
-        /*if (mode == 4)
+        if (mode == 4)
         {
             Color c;
-            c.x = transparent_color & 0x1F;
-            c.y = (transparent_color >> 5) & 0x1F;
-            c.z = (transparent_color >> 10) & 0x1F;
-            int index = paletteSearch(c);
-            c = palette[index];
+            c = palette->At(0);
             int r, g, b;
             c.Get(r, g, b);
             transparent_color = r | g << 5 | b << 10;
-        }*/
+        }
         file << (transparent_color & 0x1F) << "," << ((transparent_color >> 5) & 0x1F) << "," << ((transparent_color >> 10) & 0x1F);
         file << ") => 0x" << std::hex << (unsigned short)transparent_color << std::dec << "\n";
     }

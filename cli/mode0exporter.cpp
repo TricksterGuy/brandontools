@@ -43,11 +43,17 @@ void DoMode0(const std::vector<Image16Bpp>& images)
         // Add appropriate object to header/implementation
         if (params.split)
         {
+            bool first = true;
             for (const auto& image : images)
             {
                 std::shared_ptr<Map> map_ptr(new Map(image, params.bpp));
                 header.AddMapSet(map_ptr);
                 implementation.AddMapSet(map_ptr);
+                if (first)
+                {
+                    header.SetPalette(map_ptr->tileset->palette);
+                    implementation.SetPalette(map_ptr->tileset->palette);
+                }
             }
         }
         else
@@ -55,6 +61,8 @@ void DoMode0(const std::vector<Image16Bpp>& images)
             std::shared_ptr<MapScene> scene(new MapScene(images, params.name, params.bpp));
             header.AddScene(scene);
             implementation.AddScene(scene);
+            header.SetPalette(scene->tileset->palette);
+            implementation.SetPalette(scene->tileset->palette);
         }
 
         // Write the files

@@ -36,9 +36,10 @@ class Image16Bpp
 class Palette
 {
     public:
-        Palette(const std::vector<Color>& _colors, const std::string& _name) : colors(_colors), name(_name) {};
+        Palette(const std::vector<Color>& _colors, const std::string& _name);
         Color At(int index) const {return colors[index];}
         int Search(const Color& color) const;
+        int Search(unsigned short color) const;
         unsigned int Size() const {return colors.size();};
         void WriteData(std::ostream& file) const;
         void WriteExport(std::ostream& file) const;

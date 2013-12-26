@@ -75,6 +75,17 @@ void Image16Bpp::WriteExport(std::ostream& file) const
     WriteNewLine(file);
 }
 
+Palette::Palette(const std::vector<Color>& _colors, const std::string& _name) : colors(_colors), name(_name)
+{
+    if (params.transparent_color != -1)
+    {
+        int trans_index = Search(params.transparent_color);
+        Color temp = colors[trans_index];
+        colors[trans_index] = colors[0];
+        colors[0] = temp;
+    }
+};
+
 int Palette::Search(const Color& a) const
 {
     register double bestd = DBL_MAX;
@@ -98,6 +109,18 @@ int Palette::Search(const Color& a) const
     colorIndexCache[a] = index;
 
     return index;
+}
+
+int Palette::Search(unsigned short color_data) const
+{
+    Color color;
+    int r, g, b;
+    r = color_data & 0x1f;
+    g = (color_data >> 5) & 0x1f;
+    b = (color_data >> 10) & 0x1f;
+
+    color.Set(r, g, b);
+    return Search(color);
 }
 
 void Palette::WriteData(std::ostream& file) const
