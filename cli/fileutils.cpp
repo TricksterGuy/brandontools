@@ -89,6 +89,18 @@ void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::
     file << "\n};\n";
 }
 
+void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<std::string>& names, const std::string& name_append,
+                        unsigned short items_per_row)
+{
+    file << "const unsigned short* " << name << append << "[" << names.size() << "] =\n{\n\t";
+    for (unsigned int i = 0; i < names.size(); i++)
+    {
+        const std::string data_read = names[i] + name_append;
+        WriteElement(file, data_read, names.size(), i, items_per_row);
+    }
+    file << "\n};\n";
+}
+
 void WriteExternShortArray(std::ostream& file, const std::string& name, const std::string& append, unsigned int size)
 {
     file << "extern const unsigned short " << name << append << "[" << size << "];\n";

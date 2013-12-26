@@ -16,6 +16,7 @@ void HeaderFile::Write(std::ostream& file)
     ExportFile::Write(file);
 
     std::vector<std::string> names;
+    std::vector<std::string> animated_extras;
 
     WriteHeaderGuard(file, params.name, types[type]);
     bool ok_newline = false;
@@ -52,6 +53,8 @@ void HeaderFile::Write(std::ostream& file)
 
         names.push_back(image.name);
     }
+    if (!images8.empty())
+        animated_extras.push_back("_palette");
 
     if (image8Scene)
     {
@@ -71,6 +74,11 @@ void HeaderFile::Write(std::ostream& file)
         map.WriteExport(file);
 
         names.push_back(map.name + "_map");
+    }
+    if (!mapSets.empty())
+    {
+        animated_extras.push_back("_tiles");
+        animated_extras.push_back("_palette");
     }
 
     if (mapScene)
@@ -100,6 +108,12 @@ void HeaderFile::Write(std::ostream& file)
         WriteExternShortPtrArray(file, params.name, "_frames", names.size());
         WriteDefine(file, params.name, "_ANIMATION_FRAMES", names.size());
         WriteNewLine(file);
+        for (const std::string& extra : animated_extras)
+        {
+            std::string extra_name = params.name + extra;
+            WriteExternShortPtrArray(file, extra_name, "_frames", names.size());
+            WriteDefine(file, extra_name, "_ANIMATION_FRAMES", names.size());
+        }
     }
 
     WriteEndHeaderGuard(file);

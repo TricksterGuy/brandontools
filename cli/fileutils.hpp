@@ -21,6 +21,9 @@ void WriteShortArray(std::ostream& file, const std::string& name, const std::str
                      const std::vector<Color>& data, unsigned int items_per_row);
 void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::string& append,
                         const std::vector<std::string>& names, unsigned short items_per_row);
+void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::string& append,
+                        const std::vector<std::string>& names, const std::string& name_append,
+                        unsigned short items_per_row);
 void WriteExternShortArray(std::ostream& file, const std::string& name, const std::string& append, unsigned int size);
 void WriteExternShortPtrArray(std::ostream& file, const std::string& name, const std::string& append, unsigned int size);
 void WriteHeaderGuard(std::ostream& file, const std::string& name, const std::string& append);
