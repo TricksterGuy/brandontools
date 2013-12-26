@@ -24,15 +24,15 @@ Image16Bpp::Image16Bpp(Magick::Image image, const std::string& _name) : width(im
         int r, g, b;
         if (depth == 8)
         {
-            r = (packet.red > 3) & 0x1F;
-            g = (packet.green > 3) & 0x1F;
-            b = (packet.blue > 3) & 0x1F;
+            r = (packet.red >> 3) & 0x1F;
+            g = (packet.green >> 3) & 0x1F;
+            b = (packet.blue >> 3) & 0x1F;
         }
         else if (depth == 16)
         {
-            r = (packet.red > 11) & 0x1F;
-            g = (packet.green > 11) & 0x1F;
-            b = (packet.blue > 11) & 0x1F;
+            r = (packet.red >> 11) & 0x1F;
+            g = (packet.green >> 11) & 0x1F;
+            b = (packet.blue >> 11) & 0x1F;
         }
         else
         {
@@ -69,6 +69,7 @@ void Image16Bpp::WriteData(std::ostream& file) const
 void Image16Bpp::WriteExport(std::ostream& file) const
 {
     WriteExternShortArray(file, name, "", pixels.size());
+    WriteDefine(file, name, "_SIZE", pixels.size());
     WriteDefine(file, name, "_WIDTH", width);
     WriteDefine(file, name, "_HEIGHT", height);
     WriteNewLine(file);
@@ -159,7 +160,8 @@ void Image8Bpp::WriteData(std::ostream& file) const
 
 void Image8Bpp::WriteExport(std::ostream& file) const
 {
-    WriteExternShortArray(file, name, "", pixels.size());
+    WriteExternShortArray(file, name, "", pixels.size()/2);
+    WriteDefine(file, name, "_SIZE", pixels.size()/2);
     WriteDefine(file, name, "_WIDTH", width);
     WriteDefine(file, name, "_HEIGHT", height);
     WriteNewLine(file);

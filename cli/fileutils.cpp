@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "shared.hpp"
+
 void InitFiles(std::ofstream& file_c, std::ofstream& file_h, const std::string& name)
 {
     std::string filename_c = name + ".c";
@@ -99,18 +101,21 @@ void WriteExternShortPtrArray(std::ostream& file, const std::string& name, const
 
 void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, int value)
 {
-    file << "#define " << name << append << " " << value << "\n";
+    std::string name_cap = ToUpper(name);
+    file << "#define " << name_cap << append << " " << value << "\n";
 }
 
 void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, const std::string& value)
 {
-    file << "#define " << name << append << " " << value << "\n";
+    std::string name_cap = ToUpper(name);
+    file << "#define " << name_cap << append << " " << value << "\n";
 }
 
 void WriteHeaderGuard(std::ostream& file, const std::string& name, const std::string& append)
 {
-    file << "#ifndef " << name << append << "\n";
-    file << "#define " << name << append << "\n\n";
+    std::string name_cap = ToUpper(name);
+    file << "#ifndef " << name_cap << append << "\n";
+    file << "#define " << name_cap << append << "\n\n";
 }
 
 void WriteEndHeaderGuard(std::ostream& file)
