@@ -354,12 +354,6 @@ bool BrandonToolsApp::Validate()
         implementation.SetTransparent(params.transparent_color);
     }
 
-    if (mode4 && animated)
-    {
-        printf("[WARNING] animated is not implemented for mode4 exports if you really want this let me know.\n");
-        params.animated = animated;
-    }
-
     if (params.offset >= 256)
     {
         printf("[WARNING] -start palette offset set to >= 256.\n");
