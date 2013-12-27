@@ -45,7 +45,7 @@ void ExportFile::Write(std::ostream& file)
     if (transparent_color != -1)
     {
         file << " * Transparent color (";
-        if (mode == 4)
+        if (mode != 3)
         {
             Color c;
             c = palette->At(0);

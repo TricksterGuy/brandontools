@@ -4,6 +4,7 @@
 #include <cfloat>
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
 
 #include "cpercep.hpp"
 #include "dither.hpp"
@@ -36,8 +37,7 @@ Image16Bpp::Image16Bpp(Magick::Image image, const std::string& _name) : width(im
         }
         else
         {
-            printf("[FATAL] Image quantum not supported\n");
-            exit(EXIT_FAILURE);
+            throw "[FATAL] Image quantum not supported\n";
         }
         pixels[i] = r | g << 5 | b << 10;
     }
@@ -83,6 +83,13 @@ Palette::Palette(const std::vector<Color>& _colors, const std::string& _name) : 
         Color temp = colors[trans_index];
         colors[trans_index] = colors[0];
         colors[0] = temp;
+    }
+
+    if (colors.size() + params.offset > 256)
+    {
+        std::stringstream oss;
+        oss << "[ERROR] Too many colors in palette.\nFound " << (colors.size() + params.offset) << " colors, offset is " << params.offset << ".\n";
+        throw oss.str();
     }
 };
 
@@ -140,7 +147,11 @@ Image8Bpp::Image8Bpp(const Image16Bpp& image) : width(image.width), height(image
 {
     // If the image width is odd error out
     if (width & 1)
-        throw "[ERROR] Image width is not a multiple of 2. Please fix\n";
+    {
+        std::stringstream oss;
+        oss << "[ERROR] Image" << name << " width is not a multiple of 2. Please fix\n";
+        throw oss.str();
+    }
 
     std::vector<Color> pixels16;
     image.GetColors(pixels16);
@@ -404,9 +415,9 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
     int memory_b = tiles.size() * tile_size;
     if (tiles.size() >= 1024)
     {
-        printf("[ERROR] Too many tiles found %zd tiles.\n"
-               "Please use -reduce or make the image simpler.\n", tiles.size());
-        exit(EXIT_FAILURE);
+        std::stringstream oss;
+        oss << "[ERROR] Too many tiles found" << tiles.size() << "tiles.\nPlease make the image simpler.\n";
+        throw oss.str();
     }
 
     // Delicious infos
