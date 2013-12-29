@@ -5,15 +5,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
-#include <unordered_set>
 
 #include "cpercep.hpp"
 #include "dither.hpp"
 #include "fileutils.hpp"
 #include "mediancut.hpp"
 #include "shared.hpp"
-
-uint32_t hashlittle( const void *key, size_t length, uint32_t initval);
 
 Image16Bpp::Image16Bpp(Magick::Image image, const std::string& _name) : width(image.columns()), height(image.rows()), name(_name), pixels(width * height)
 {
@@ -278,6 +275,15 @@ void PaletteBank::Merge(const Palette& palette)
     }
 }
 
+void PaletteBank::Add(const Color& c)
+{
+    if (colorSet.find(c) == colorSet.end())
+    {
+        colorSet.insert(c);
+        colors.push_back(c);
+    }
+}
+
 int PaletteBank::Search(const Color& a) const
 {
     register double bestd = DBL_MAX;
@@ -301,6 +307,42 @@ int PaletteBank::Search(const Color& a) const
     }
 
     return index;
+}
+
+std::ostream& operator<<(std::ostream& file, const PaletteBank& bank)
+{
+    std::vector<Color> colors = bank.colors;
+    colors.resize(16);
+    for (unsigned int i = 0; i < colors.size(); i++)
+    {
+        int x, y, z;
+        const Color& color = colors[i];
+        color.Get(x, y, z);
+        short data_read = x | (y << 5) | (z << 10);
+        WriteElement(file, data_read, colors.size(), i, 8);
+    }
+
+    return file;
+}
+
+void WriteExportPaletteBanks(std::ostream& file, const std::string& name, const std::vector<PaletteBank>& banks)
+{
+    WriteExternShortArray(file, name, "_palette", 256);
+    WriteDefine(file, name, "_PALETTE_SIZE", 256);
+    WriteNewLine(file);
+}
+
+void WriteDataPaletteBanks(std::ostream& file, const std::string& name, const std::vector<PaletteBank>& banks)
+{
+    file << "const unsigned short " << name << "_palette[256] =\n{\n\t";
+    for (unsigned int i = 0; i < 16; i++)
+    {
+        file << banks[i];
+        if (i != 16 - 1)
+            file << ",\n\t";
+    }
+    file << "\n};\n";
+    WriteNewLine(file);
 }
 
 template <>
@@ -403,22 +445,6 @@ std::ostream& operator<<(std::ostream& file, const Tile<unsigned char>& tile)
     return file;
 }
 
-struct GBATileHash
-{
-    std::size_t operator()(const GBATile& k) const
-    {
-        return hashlittle(k.data.data(), TILE_SIZE, 0xDEADDEAD);
-    }
-};
-
-struct GBATile4bppEqual
-{
-    bool operator()(const GBATile& lhs, const GBATile& rhs) const
-    {
-        return lhs.data == rhs.data && lhs.palette_bank == rhs.palette_bank;
-    }
-};
-
 bool TilesPaletteSizeComp(const GBATile& i, const GBATile& j)
 {
     return i.palette.Size() > j.palette.Size();
@@ -495,7 +521,11 @@ bool Tileset::Match(const ImageTile& tile, int& tile_id, int& pal_id) const
 
 void Tileset::WriteData(std::ostream& file) const
 {
-    palette->WriteData(file);
+    if (bpp == 8)
+        palette->WriteData(file);
+    else
+        WriteDataPaletteBanks(file, name, paletteBanks);
+
     std::vector<GBATile>::const_iterator tile_ptr = tilesExport.begin();
     file << "const unsigned short " << name << "_tiles[" << Size() << "] =\n{\n\t";
     for (unsigned int i = 0; i < tilesExport.size(); i++)
@@ -511,7 +541,11 @@ void Tileset::WriteData(std::ostream& file) const
 
 void Tileset::WriteExport(std::ostream& file) const
 {
-    palette->WriteExport(file);
+    if (bpp == 8)
+        palette->WriteExport(file);
+    else
+        WriteExportPaletteBanks(file, name, paletteBanks);
+
     WriteDefine(file, name, "_PALETTE_TYPE", (bpp == 4) ? "(0 << 7)" : "(1 << 7)");
     WriteNewLine(file);
 
@@ -523,9 +557,22 @@ void Tileset::WriteExport(std::ostream& file) const
 
 void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
 {
+    // Initialize Palette Banks
+    paletteBanks.reserve(16);
+    for (int i = 0; i < 16; i++)
+        paletteBanks.push_back(PaletteBank(i));
+
     // Tile image into 16 bit tiles
     Tileset tileset16bpp(images, name, 16);
     std::set<ImageTile> imageTiles = tileset16bpp.itiles;
+
+    GBATile nullTile;
+    nullTile.id = 0;
+    nullTile.bpp = 4;
+    ImageTile nullImageTile;
+    tiles.insert(nullTile);
+    tilesExport.push_back(nullTile);
+    matcher[nullImageTile] = nullTile;
 
     // Reduce each tile to 4bpp
     std::vector<GBATile> gbaTiles;
@@ -551,6 +598,12 @@ void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
 
     // Greedy approach deal with tiles with largest palettes first.
     std::sort(gbaTiles.begin(), gbaTiles.end(), TilesPaletteSizeComp);
+
+    // But deal with nulltile
+    for (unsigned int i = 0; i < paletteBanks.size(); i++)
+        paletteBanks[i].Add(Color());
+    nullTile.palette_bank = 0;
+
 
     // Construct palette banks, assign bank id to tile, remap tile to palette bank given, assign tile ids
     for (auto& tile : gbaTiles)
@@ -759,8 +812,10 @@ void Map::Set(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset)
     {
         case 4:
             Init4bpp(image);
+            break;
         default:
             Init8bpp(image);
+            break;
     }
 }
 
@@ -781,8 +836,8 @@ void Map::Init4bpp(const Image16Bpp& image)
             printf("[WARNING] Image: %s No match for tile starting at (%d %d) px, using empty tile instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
             printf("[WARNING] Image: %s No match for palette for tile starting at (%d %d) px, using palette 0 instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
         }
-
         data[i] = pal_id << 12 | tile_id;
+
     }
 }
 

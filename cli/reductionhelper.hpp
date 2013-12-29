@@ -87,18 +87,22 @@ class Image8BppScene
 class PaletteBank
 {
     public:
+        PaletteBank(int _id) : id(_id) {};
         PaletteBank(const std::vector<Color>& _colors, int id);
         bool Contains(const Palette& palette) const;
         int CanMerge(const Palette& palette) const;
         void Merge(const Palette& palette);
+        void Add(const Color& c);
         unsigned int Size() const {return colors.size();};
         int Search(const Color& c) const;
-        void WriteData(std::ostream& file) const;
-        void WriteExport(std::ostream& file) const;
         std::vector<Color> colors;
         std::set<Color> colorSet;
         int id;
 };
+
+std::ostream& operator<<(std::ostream& file, const PaletteBank& bank);
+void WriteExportPaletteBanks(std::ostream& file, const std::string& name, const std::vector<PaletteBank>& banks);
+void WriteDataPaletteBanks(std::ostream& file, const std::string& name, const std::vector<PaletteBank>& banks);
 
 template <class T>
 class Tile
