@@ -635,7 +635,6 @@ void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
                     max_colors_left = colors_left;
                     pbank = i;
                 }
-                printf("%d %d %d\n", i, bank.Size(), tile.palette.Size());
             }
         }
 
