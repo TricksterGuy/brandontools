@@ -642,13 +642,6 @@ void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
         if (pbank == -1 && !params.force)
             throw "More than 16 distinct palettes found, please use 8bpp mode.";
 
-        // Ok some ugly stuff is about to go down.
-        if (pbank == -1)
-        {
-            printf("[WARNING] Ok I will export your image however the quality will not be great.\n");
-
-        }
-
         // Merge step and assign palette bank
         paletteBanks[pbank].Merge(tile.palette);
         tile.palette_bank = pbank;

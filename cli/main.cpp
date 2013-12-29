@@ -98,7 +98,7 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
     {wxCMD_LINE_OPTION, "border", "border", "Border around each tile in tileset image",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "force", "force",
-        "For mode 0 4bpp export only.  If the program complains about a badly formatted map, forces the program to export anyway.",
+        "For mode 0 4bpp export only.  If the program complains about a badly formatted map, forces the program to export anyway (NOT IMPLEMENTED YET).",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
 
 
