@@ -462,7 +462,10 @@ int Tileset::Search(const GBATile& tile) const
 {
     const std::set<GBATile>::const_iterator foundTile = tiles.find(tile);
     if (foundTile != tiles.end())
+    {
+        std::cout << "found\n" << *foundTile << "\n";
         return foundTile->id;
+    }
 
     return -1;
 }
@@ -632,13 +635,16 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
     const std::vector<Image8Bpp>& images = scene.images;
 
     GBATile nullTile;
+    ImageTile nullImageTile;
     tiles.insert(nullTile);
     tilesExport.push_back(nullTile);
+    matcher[nullImageTile] = nullTile;
 
     for (unsigned int k = 0; k < images.size(); k++)
     {
         bool disjoint_error = false;
         const Image8Bpp& image = images[k];
+        const Image16Bpp& image16 = images16[k];
 
         offsets.push_back(tiles.size());
         unsigned int tilesX = image.width / tile_width;
@@ -657,6 +663,9 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
                 tile.id = tiles.size();
                 tiles.insert(tile);
                 tilesExport.push_back(tile);
+                // Add matcher data
+                ImageTile imageTile(image16.pixels, image.width, tilex, tiley, params.border);
+                matcher[imageTile] = tile;
             }
             else if (offsets.size() > 1 && !disjoint_error)
             {
@@ -777,22 +786,21 @@ void Map::Init4bpp(const Image16Bpp& image)
     }
 }
 
-void Map::Init8bpp(const Image16Bpp& image16)
+void Map::Init8bpp(const Image16Bpp& image)
 {
-    Image8Bpp image(image16);
-    const std::vector<unsigned char>& pixels = image.pixels;
+    const std::vector<unsigned short>& pixels = image.pixels;
 
     for (unsigned int i = 0; i < data.size(); i++)
     {
         int tilex = i % width;
         int tiley = i / width;
-        GBATile tile(pixels, image.width, tilex, tiley);
-        int tile_id = tileset->Search(tile);
+        ImageTile tile(pixels, image.width, tilex, tiley);
+        int tile_id = 0;
+        int pal_id = 0;
 
-        if (tile_id == -1)
+        if (!tileset->Match(tile, tile_id, pal_id))
         {
             printf("[WARNING] Image: %s No match for tile starting at (%d %d) px, using empty tile instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
-            tile_id = 0;
         }
 
         data[i] = tile_id;

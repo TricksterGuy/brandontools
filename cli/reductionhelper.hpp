@@ -151,7 +151,7 @@ class Tileset
         // Only one of two will be used bpp = 4 or 8: tiles 16: itiles
         std::set<GBATile> tiles;
         std::set<ImageTile> itiles;
-        // Bookkeeping matcher used when bpp = 4
+        // Bookkeeping matcher used when bpp = 4 or 8
         std::map<ImageTile, GBATile> matcher;
         // Tiles sorted by id for export.
         std::vector<GBATile> tilesExport;
