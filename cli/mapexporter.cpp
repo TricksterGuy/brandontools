@@ -51,6 +51,11 @@ void DoMapExport(const std::vector<Image16Bpp>& images, const std::vector<Image1
         printf("Image to GBA (Map) failed! Reason: %s\n", ex.c_str());
         exit(EXIT_FAILURE);
     }
+    catch (const char* ex)
+    {
+        printf("Image to GBA (Map) failed! Reason: %s\n", ex);
+        exit(EXIT_FAILURE);
+    }
     catch (...)
     {
         printf("Image to GBA (Map) failed!");

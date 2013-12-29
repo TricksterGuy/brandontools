@@ -85,6 +85,11 @@ void DoMode0(const std::vector<Image16Bpp>& images)
         printf("Image to GBA (Mode0 %dbpp) failed! Reason: %s\n", params.bpp, ex.c_str());
         exit(EXIT_FAILURE);
     }
+    catch (const char* ex)
+    {
+        printf("Image to GBA (Mode0 %dbpp) failed! Reason: %s\n", params.bpp, ex);
+        exit(EXIT_FAILURE);
+    }
     catch (...)
     {
         printf("Image to GBA (Mode0 %dbpp) failed!", params.bpp);
