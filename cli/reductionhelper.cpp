@@ -831,6 +831,7 @@ void Map::WriteData(std::ostream& file) const
         }
     }
     file << "\n};\n";
+    WriteNewLine(file);
 }
 
 void Map::WriteExport(std::ostream& file) const
