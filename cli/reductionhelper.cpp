@@ -591,9 +591,11 @@ void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
         bigPalette.insert(tile_palette.begin(), tile_palette.end());
     }
 
-    if (bigPalette.size() > 256)
+    if (bigPalette.size() > 256 && !params.force)
     {
-        throw "[ERROR] Image after reducing tiles to 4bpp still contains more than 256 distinct colors. Please fix.";
+        std::stringstream oss;
+        oss << "[ERROR] Image after reducing tiles to 4bpp still contains more than 256 distinct colors.  Found " << bigPalette.size() << " colors. Please fix.";
+        throw oss.str();
     }
 
     // Greedy approach deal with tiles with largest palettes first.
@@ -630,12 +632,20 @@ void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
                     max_colors_left = colors_left;
                     pbank = i;
                 }
+                printf("%d %d %d\n", i, bank.Size(), tile.palette.Size());
             }
         }
 
-        // Cry and die for now.
-        if (pbank == -1)
+        // Cry and die for now. Unless you tell me to keep going.
+        if (pbank == -1 && !params.force)
             throw "More than 16 distinct palettes found, please use 8bpp mode.";
+
+        // Ok some ugly stuff is about to go down.
+        if (pbank == -1)
+        {
+            printf("[WARNING] Ok I will export your image however the quality will not be great.\n");
+
+        }
 
         // Merge step and assign palette bank
         paletteBanks[pbank].Merge(tile.palette);

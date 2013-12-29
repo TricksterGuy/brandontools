@@ -97,6 +97,10 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "border", "border", "Border around each tile in tileset image",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_SWITCH, "force", "force",
+        "For mode 0 4bpp export only.  If the program complains about a badly formatted map, forces the program to export anyway.",
+        wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+
 
     // Advanced Mode 4 options Use at your own risk.
     {wxCMD_LINE_OPTION, "weights", "weights",
@@ -166,6 +170,7 @@ long split_sbb = -1;
 long border = 0;
 bool hide = false;
 bool full_palette = false;
+bool force = false;
 
 // Tileset names will be here
 std::vector<std::string> tilesets;
@@ -225,6 +230,7 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     parser.Found(_("split_sbb"), &split_sbb);
     parser.Found(_("tileset"), &tileset);
     parser.Found(_("border"), &border);
+    force = parser.Found(_("force"));
 
     hide = parser.Found(_("hide"));
     full_palette = parser.Found(_("fullpalette"));
@@ -271,6 +277,7 @@ bool BrandonToolsApp::Validate()
     params.split_sbb = split_sbb;
     params.bpp = bpp;
     params.border = border;
+    params.force = force;
 
     // Mode check
     if (mode0 + mode3 + mode4 + sprites + map + tiles != 1)

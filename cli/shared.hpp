@@ -27,6 +27,7 @@ struct ExportParams
     bool animated;
     int bpp;
     bool reduce;
+    bool force;
 
     // Palette options
     unsigned int offset;
