@@ -633,6 +633,7 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
 
     GBATile nullTile;
     tiles.insert(nullTile);
+    tilesExport.push_back(nullTile);
 
     for (unsigned int k = 0; k < images.size(); k++)
     {
