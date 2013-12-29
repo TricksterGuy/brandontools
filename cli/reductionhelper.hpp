@@ -153,6 +153,8 @@ class Tileset
         std::set<ImageTile> itiles;
         // Bookkeeping matcher used when bpp = 4
         std::map<ImageTile, GBATile> matcher;
+        // Tiles sorted by id for export.
+        std::vector<GBATile> tilesExport;
         // Only one max will be used bpp = 4: paletteBanks 8: palette 16: neither
         std::shared_ptr<Palette> palette;
         std::vector<PaletteBank> paletteBanks;
@@ -276,7 +278,7 @@ bool Tile<T>::operator==(const Tile<T>& other) const
 template <class T>
 bool Tile<T>::operator<(const Tile<T>& other) const
 {
-    return id < other.id;
+    return data < other.data;
 }
 
 template <class T>

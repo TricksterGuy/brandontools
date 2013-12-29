@@ -493,16 +493,17 @@ bool Tileset::Match(const ImageTile& tile, int& tile_id, int& pal_id) const
 void Tileset::WriteData(std::ostream& file) const
 {
     palette->WriteData(file);
-    std::set<GBATile>::const_iterator tile_ptr = tiles.begin();
+    std::vector<GBATile>::const_iterator tile_ptr = tilesExport.begin();
     file << "const unsigned short " << name << "_tiles[" << Size() << "] =\n{\n\t";
-    for (unsigned int i = 0; i < tiles.size(); i++)
+    for (unsigned int i = 0; i < tilesExport.size(); i++)
     {
         file << *tile_ptr;
-        if (i != tiles.size() - 1)
+        if (i != tilesExport.size() - 1)
             file << ",\n\t";
         tile_ptr++;
     }
     file << "\n};\n";
+    WriteNewLine(file);
 }
 
 void Tileset::WriteExport(std::ostream& file) const
@@ -591,6 +592,7 @@ void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
         {
             tile.id = tiles.size();
             tiles.insert(tile);
+            tilesExport.push_back(tile);
         }
         else
         {
@@ -634,6 +636,7 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
 
     for (unsigned int k = 0; k < images.size(); k++)
     {
+        bool disjoint_error = false;
         const Image8Bpp& image = images[k];
 
         offsets.push_back(tiles.size());
@@ -652,10 +655,12 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
             {
                 tile.id = tiles.size();
                 tiles.insert(tile);
+                tilesExport.push_back(tile);
             }
-            else if (offsets.size() > 1)
+            else if (offsets.size() > 1 && !disjoint_error)
             {
-                printf("[WARNING] Tiles found in tileset images are not disjoint, offset calculations may be off\n");
+                printf("[WARNING] Tiles found in tileset image %s are not disjoint, offset calculations may be off\n", image.name.c_str());
+                disjoint_error = true;
             }
         }
     }
@@ -734,6 +739,10 @@ Map::Map(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset)
 
 void Map::Set(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset)
 {
+    width = image.width / 8;
+    height = image.height / 8;
+    name = image.name;
+    data.resize(width * height);
     tileset = global_tileset;
 
     switch(tileset->bpp)
