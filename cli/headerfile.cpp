@@ -20,11 +20,10 @@ void HeaderFile::Write(std::ostream& file)
 
     WriteHeaderGuard(file, params.name, types[type]);
     bool ok_newline = false;
-    if (params.transparent_color != -1)
+    if (params.transparent_given)
     {
-        //TODO mode 4 and mode 0 handling.
         char buffer[7];
-        sprintf(buffer, "0x%04x", (unsigned short) transparent_color);
+        sprintf(buffer, "0x%04x", transparent_color);
         WriteDefine(file, params.name, "_TRANSPARENT", (mode == 3) ? buffer : "0x00");
         ok_newline = true;
     }

@@ -261,7 +261,8 @@ bool BrandonToolsApp::Validate()
     // default params
     params.width = -1;
     params.height = -1;
-    params.transparent_color = -1;
+    params.transparent_color = 0;
+    params.transparent_given = false;
     params.animated = animated;
 
     params.offset = start;
@@ -339,6 +340,7 @@ bool BrandonToolsApp::Validate()
 
     if (!transparent.IsEmpty())
     {
+        params.transparent_given = true;
         std::vector<std::string> tokens;
         split(transparent.ToStdString(), ',', tokens);
         if (tokens.size() != 3)
@@ -354,7 +356,10 @@ bool BrandonToolsApp::Validate()
         b = b >> 3;
 
         if (r > 31 || r < 0 || g < 0 || g > 31 || b < 0 || b > 31)
-            printf("[WARNING] -transparent one of r,g,b outside range continuing...\n");
+        {
+            printf("[ERROR] -transparent one of r,g,b outside range...\n");
+            exit(EXIT_FAILURE);
+        }
 
         params.transparent_color = b << 10 | g << 5 | r;
         header.SetTransparent(params.transparent_color);

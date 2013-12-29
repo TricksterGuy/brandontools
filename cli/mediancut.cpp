@@ -185,9 +185,8 @@ bool MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std:
     if (hist.Size() <= desiredColors)
     {
         const std::vector<Color>& colors = hist.GetColors();
-        unsigned int size = colors.size();
-        palette.resize(size);
-        std::copy(colors.begin(), colors.end(), palette.begin());
+        for (const auto& color : colors)
+            palette.push_back(color);
         return false;
     }
     // Volume Queue

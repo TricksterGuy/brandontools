@@ -42,19 +42,11 @@ void ExportFile::Write(std::ostream& file)
             file << " * " << tilesets[i] << "\n";
         }
     }
-    if (transparent_color != -1)
+    if (params.transparent_given)
     {
         file << " * Transparent color (";
-        if (mode != 3)
-        {
-            Color c;
-            c = palette->At(0);
-            int r, g, b;
-            c.Get(r, g, b);
-            transparent_color = r | g << 5 | b << 10;
-        }
         file << (transparent_color & 0x1F) << "," << ((transparent_color >> 5) & 0x1F) << "," << ((transparent_color >> 10) & 0x1F);
-        file << ") => 0x" << std::hex << (unsigned short)transparent_color << std::dec << "\n";
+        file << ") => 0x" << std::hex << transparent_color << std::dec << "\n";
     }
     file << " * \n";
     file << " * Quote/Fortune of the Day!\n";

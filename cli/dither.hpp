@@ -8,6 +8,6 @@
 #include "color.hpp"
 #include "reductionhelper.hpp"
 
-void RiemersmaDither(std::vector<Color>::iterator pixels, Image8Bpp& image, int dither, float ditherlevel);
+void RiemersmaDither(const Image16Bpp& inImage, Image8Bpp& outimage, unsigned short transparent, int dither, float ditherlevel);
 
 #endif

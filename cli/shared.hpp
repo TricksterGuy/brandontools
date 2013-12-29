@@ -21,13 +21,11 @@ struct ExportParams
     std::vector<Magick::Image> tileset;
 
     // Optional stuff
-    int transparent_color;
+    unsigned short transparent_color;
+    bool transparent_given;
     int width;
     int height;
     bool animated;
-    int bpp;
-    bool reduce;
-    bool force;
 
     // Palette options
     unsigned int offset;
@@ -37,10 +35,13 @@ struct ExportParams
     unsigned int palette;
     bool fullpalette;
     bool split;
+    int bpp;
 
     // Tile/map stuff
     int split_sbb;
     int border;
+    bool force;
+    bool reduce;
 };
 
 void DoMode0(const std::vector<Image16Bpp>& images);

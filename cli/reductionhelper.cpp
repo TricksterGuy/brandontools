@@ -45,18 +45,13 @@ Image16Bpp::Image16Bpp(Magick::Image image, const std::string& _name) : width(im
 
 void Image16Bpp::GetColors(std::vector<Color>& colors) const
 {
-    colors.resize(width * height);
-    std::vector<Color>::iterator it = colors.begin();
-    GetColors(it);
-}
-
-void Image16Bpp::GetColors(std::vector<Color>::iterator& color_ptr) const
-{
     for (unsigned int i = 0; i < width * height; i++)
     {
         short pix = pixels[i];
-        color_ptr->Set(pix & 0x1f, (pix >> 5) & 0x1f, (pix >> 10) & 0x1f);
-        color_ptr++;
+        if (pix != params.transparent_color)
+        {
+            colors.push_back(Color(pix));
+        }
     }
 }
 
@@ -77,14 +72,6 @@ void Image16Bpp::WriteExport(std::ostream& file) const
 
 Palette::Palette(const std::vector<Color>& _colors, const std::string& _name) : colors(_colors), name(_name)
 {
-    if (params.transparent_color != -1)
-    {
-        int trans_index = Search(params.transparent_color);
-        Color temp = colors[trans_index];
-        colors[trans_index] = colors[0];
-        colors[0] = temp;
-    }
-
     if (colors.size() + params.offset > 256)
     {
         std::stringstream oss;
@@ -125,14 +112,7 @@ int Palette::Search(const Color& a) const
 
 int Palette::Search(unsigned short color_data) const
 {
-    Color color;
-    int r, g, b;
-    r = color_data & 0x1f;
-    g = (color_data >> 5) & 0x1f;
-    b = (color_data >> 10) & 0x1f;
-
-    color.Set(r, g, b);
-    return Search(color);
+    return Search(Color(color_data));
 }
 
 void Palette::WriteData(std::ostream& file) const
@@ -161,14 +141,24 @@ Image8Bpp::Image8Bpp(const Image16Bpp& image) : width(image.width), height(image
     std::vector<Color> pixels16;
     image.GetColors(pixels16);
 
+    // If transparent color is present add to palette, but only if offset is not 0
     std::vector<Color> paletteColors;
+    paletteColors.reserve(params.palette);
+    if (params.offset == 0)
+    {
+        params.palette -= 1;
+        paletteColors.push_back(Color(params.transparent_color));
+    }
+
     MedianCut(pixels16, params.palette, paletteColors, params.weights);
+
     palette.reset(new Palette(paletteColors, name));
-    RiemersmaDither(pixels16.begin(), *this, params.dither, params.dither_level);
+    RiemersmaDither(image, *this, params.transparent_color, params.dither, params.dither_level);
     if (params.offset > 0)
     {
         for (unsigned char& pix : pixels)
-            pix += params.offset;
+            if (pix)
+                pix += params.offset;
     }
 }
 
@@ -180,14 +170,12 @@ void Image8Bpp::Set(const Image16Bpp& image, std::shared_ptr<Palette> global_pal
     pixels.resize(width * height);
     palette = global_palette;
 
-    std::vector<Color> pixels16;
-    image.GetColors(pixels16);
-
-    RiemersmaDither(pixels16.begin(), *this, params.dither, params.dither_level);
+    RiemersmaDither(image, *this, params.transparent_color, params.dither, params.dither_level);
     if (params.offset > 0)
     {
         for (unsigned char& pix : pixels)
-            pix += params.offset;
+            if (pix)
+                pix += params.offset;
     }
 }
 
@@ -212,12 +200,20 @@ Image8BppScene::Image8BppScene(const std::vector<Image16Bpp>& images16, const st
     for (unsigned int i = 0; i < images16.size(); i++)
         total_pixels += images16[i].width * images16[i].height;
 
-    std::vector<Color> pixels(total_pixels);
-    std::vector<Color>::iterator iterator = pixels.begin();
+    std::vector<Color> pixels;
+    pixels.reserve(total_pixels);
     for (unsigned int i = 0; i < images16.size(); i++)
-        images16[i].GetColors(iterator);
+        images16[i].GetColors(pixels);
 
+    // If transparent color is present add to palette
     std::vector<Color> paletteColors;
+    paletteColors.reserve(params.palette);
+    if (params.offset == 0)
+    {
+        params.palette -= 1;
+        paletteColors.push_back(Color(params.transparent_color));
+    }
+
     MedianCut(pixels, params.palette, paletteColors, params.weights);
     palette.reset(new Palette(paletteColors, name));
 
@@ -365,26 +361,33 @@ Tile<unsigned short>::Tile(const unsigned short* image, int pitch, int tilex, in
 template <>
 Tile<unsigned char>::Tile(std::shared_ptr<ImageTile> imageTile, int _bpp) : data(TILE_SIZE), bpp(_bpp)
 {
-    // bpp reduce
-    int num_colors = 1 << bpp;
+    // bpp reduce minus one for the transparent color
+    int num_colors = (1 << bpp) - 1;
     const unsigned short* imgdata = imageTile->data.data();
     int weights[4] = {25, 25, 25, 25};
 
+    std::vector<Color> pixels;
+    pixels.reserve(TILE_SIZE);
+
     std::vector<Color> paletteArray;
-    std::vector<Color> pixels(TILE_SIZE);
+    paletteArray.reserve(1 << bpp);
 
     for (unsigned int i = 0; i < TILE_SIZE; i++)
     {
         unsigned short pix = imgdata[i];
-        pixels[i].Set(pix & 0x1f, (pix >> 5) & 0x1f, (pix >> 10) & 0x1f);
+        if (pix != params.transparent_color)
+            pixels.push_back(Color(pix));
     }
-
+    paletteArray.push_back(Color(params.transparent_color));
     MedianCut(pixels, num_colors, paletteArray, weights);
 
     palette.Set(paletteArray);
 
     for (unsigned int i = 0; i < TILE_SIZE; i++)
-        data[i] = palette.Search(pixels[i]);
+    {
+        unsigned short pix = imgdata[i];
+        data[i] = (pix != params.transparent_color) ? palette.Search(pix) : 0;
+    }
 
     sourceTile = imageTile;
 }

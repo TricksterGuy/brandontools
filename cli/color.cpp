@@ -4,6 +4,11 @@
 
 #include "cpercep.hpp"
 
+Color::Color(unsigned short color_data)
+{
+    Set(color_data);
+}
+
 bool Color::operator<(const Color& right) const
 {
     bool less;
@@ -18,6 +23,13 @@ void Color::Set(int a, int b, int c)
     x = a;
     y = b;
     z = c;
+}
+
+void Color::Set(unsigned short color_data)
+{
+    x = color_data & 0x1f;
+    y = (color_data >> 5) & 0x1f;
+    z = (color_data >> 10) & 0x1f;
 }
 
 void Color::Get(int& a, int& b, int& c) const
