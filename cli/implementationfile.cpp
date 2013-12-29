@@ -82,12 +82,6 @@ void ImplementationFile::Write(std::ostream& file)
         names.push_back(map.name + "_map");
     }
 
-    for (const auto map_ptr : maps)
-    {
-        const Map& map = *map_ptr;
-        map.WriteData(file);
-    }
-
     if (params.animated)
     {
         WriteShortPtrArray(file, params.name, "_frames", names, 1);

@@ -104,7 +104,6 @@ void ExportFile::AddImage(std::shared_ptr<Image8Bpp> image)
 
 void ExportFile::AddScene(std::shared_ptr<Image8BppScene> images)
 {
-    if (image8Scene) printf("[WARNING] Multiple 8 bit scenes being set in export file?\n");
     image8Scene = images;
 }
 
@@ -115,13 +114,11 @@ void ExportFile::AddMapSet(std::shared_ptr<Map> mapSet)
 
 void ExportFile::AddScene(std::shared_ptr<MapScene> maps)
 {
-    if (mapScene) printf("[WARNING] Multiple map scenes being set in export file?\n");
     mapScene = maps;
 }
 
 void ExportFile::AddTileset(std::shared_ptr<Tileset> tileset)
 {
-    if (tileset) printf("[WARNING] Multiple tilesets being set in export file?\n");
     this->tileset = tileset;
 }
 
