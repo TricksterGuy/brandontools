@@ -995,7 +995,10 @@ Sprite::Sprite(const Image16Bpp& image, int bpp)
     if (size == -1)
     {
         std::stringstream oss;
-        oss << "[FATAL] Invalid sprite size (" << width << ", " << height << ")\nPlease fix.";
+        oss << "[FATAL] Invalid sprite size (" << width << ", " << height << ")\nPlease fix.\n";
+        oss << "If you formed your sprites in a single sprite sheet we don't allow that.\n";
+        oss << "This program will automatically build the spritesheet for you and export.\n";
+        oss << "Just pass in the images you want to use as sprites and let me do the rest.\n";
         throw oss.str();
     }
 
@@ -1054,7 +1057,10 @@ void Sprite::Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palett
     if (size == -1)
     {
         std::stringstream oss;
-        oss << "[FATAL] Invalid sprite size (" << width << ", " << height << ")\nPlease fix.";
+        oss << "[FATAL] Invalid sprite size (" << width << ", " << height << ")\nPlease fix.\n";
+        oss << "If you formed your sprites in a single sprite sheet we don't allow that.\n";
+        oss << "This program will automatically build the spritesheet for you and export.\n";
+        oss << "Just pass in the images you want to use as sprites and let me do the rest.\n";
         throw oss.str();
     }
 

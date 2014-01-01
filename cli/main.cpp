@@ -65,7 +65,9 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         "to a pixel in your input image. The range of r,g,b is [0,255]. This does not magically make "
         "things transparent you must ignore pixels matching the transparent color when drawing it "
         "(see generated header for MACRO that contains the transparent color in GBA colorspace). "
-        "This does not work with DMA so don't even try kiddos.", wxCMD_LINE_VAL_STRING,
+        "This does not work with DMA so don't even try kiddos."
+        "In mode 4 this color will become the background color."
+        "And in mode0 and sprites the gba will colorkey this color out of the image", wxCMD_LINE_VAL_STRING,
         wxCMD_LINE_PARAM_OPTIONAL },
     {wxCMD_LINE_SWITCH, "animated", "animated",
         "In addition to exporting multiple images, this parameter will create a final array that "
