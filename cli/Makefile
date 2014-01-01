@@ -27,6 +27,7 @@ FILES := color.o \
 	mode4exporter.o \
 	reductionhelper.o \
 	shared.o \
+	spritesexporter.o \
 	tilesexporter.o
 
 all : $(OUTPUT)
@@ -61,4 +62,5 @@ mode3exporter.o : mode3exporter.cpp reductionhelper.hpp shared.hpp color.hpp
 mode4exporter.o : mode4exporter.cpp reductionhelper.hpp shared.hpp color.hpp
 reductionhelper.o : reductionhelper.cpp reductionhelper.hpp fileutils.hpp color.hpp cpercep.hpp mediancut.hpp shared.hpp
 shared.o : shared.cpp shared.hpp reductionhelper.hpp
+spritesexporter.o : spritesexporter.cpp reductionhelper.hpp color.hpp shared.hpp
 tilesexporter.o : tilesexporter.cpp reductionhelper.hpp color.hpp shared.hpp

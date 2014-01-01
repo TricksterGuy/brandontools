@@ -21,7 +21,7 @@ class ExportFile
 {
     public:
         ExportFile(const std::string& _invocation = "") : invocation(_invocation), transparent_color(-1), mode(3),
-            type(0), palette(NULL), image8Scene(NULL), mapScene(NULL), tileset(NULL) {};
+            type(0), palette(NULL), image8Scene(NULL), mapScene(NULL), tileset(NULL), spriteScene(NULL) {};
         virtual ~ExportFile() {};
 
         void SetInvocation(const std::string& invo) {invocation = invo;};
@@ -42,6 +42,7 @@ class ExportFile
         void AddScene(std::shared_ptr<MapScene> mapScene);
         void AddTileset(std::shared_ptr<Tileset> tileset);
         void AddMap(std::shared_ptr<Map> map);
+        void AddScene(std::shared_ptr<SpriteScene> sprites);
 
     private:
         std::string invocation;
@@ -60,6 +61,7 @@ class ExportFile
         // 9) palette and tileset
         // 10) a map
         // 11) multiple maps
+        // 12) A spritesheet (2d and 1d)
 
         // 1-2) images16
         // 3-4) images8
@@ -68,6 +70,7 @@ class ExportFile
         // 8) mapScene
         // 9) tileset
         // 10-11) maps
+        // 12) spriteScene
 
     protected:
         int transparent_color;
@@ -81,6 +84,7 @@ class ExportFile
         std::shared_ptr<MapScene> mapScene;
         std::shared_ptr<Tileset> tileset;
         std::vector<std::shared_ptr<Map>> maps;
+        std::shared_ptr<SpriteScene> spriteScene;
 };
 
 #endif

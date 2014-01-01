@@ -12,6 +12,25 @@
 #include "mediancut.hpp"
 #include "shared.hpp"
 
+const int sprite_shapes[16] =
+{
+//h =  1,  2, 4,  8
+       0,  2, 2, -1, // width = 1
+       1,  0, 2, -1, // width = 2
+       1,  1, 0,  2, // width = 4
+      -1, -1, 1,  0  // width = 8
+};
+
+const int sprite_sizes[16] =
+{
+//h =  1,  2, 4,  8
+       0,  0, 1, -1, // width = 1
+       0,  1, 2, -1, // width = 2
+       1,  2, 2,  3, // width = 4
+      -1, -1, 3,  3  // width = 8
+};
+
+
 Image16Bpp::Image16Bpp(Magick::Image image, const std::string& _name) : width(image.columns()), height(image.rows()), name(_name), pixels(width * height)
 {
     unsigned int num_pixels = width * height;
@@ -390,6 +409,18 @@ Tile<unsigned char>::Tile(std::shared_ptr<ImageTile> imageTile, int _bpp) : data
     }
 
     sourceTile = imageTile;
+}
+
+template <>
+void Tile<unsigned char>::Set(const Image16Bpp& image, const Palette& global_palette, int tilex, int tiley)
+{
+    bpp = 8;
+    for (unsigned int i = 0; i < TILE_SIZE; i++)
+    {
+        int x = i % 8;
+        int y = i / 8;
+        data[i] = global_palette.Search(image.pixels[(tiley * 8 + y) * image.width + tilex * 8 + x]);
+    }
 }
 
 template <>
@@ -943,4 +974,329 @@ void MapScene::WriteExport(std::ostream& file) const
     tileset->WriteExport(file);
     for (const auto& map : maps)
         map.WriteExport(file);
+}
+
+Sprite::Sprite(const Image16Bpp& image, std::shared_ptr<Palette> global_palette)
+{
+    Set(image, global_palette);
+}
+
+void Sprite::Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palette)
+{
+    name = image.name;
+    width = image.width / 8;
+    height = image.height / 8;
+    data.resize(width * height);
+    offset = 0;
+    palette = global_palette;
+
+    unsigned int key = (log2(width) << 2) | log2(height);
+    shape = sprite_shapes[key];
+    size = sprite_sizes[key];
+    if (size == -1)
+    {
+        std::stringstream oss;
+        oss << "[FATAL] Invalid sprite size (" << width << ", " << height << ")\nPlease fix.";
+        throw oss.str();
+    }
+
+    for (unsigned int i = 0; i < data.size(); i++)
+    {
+        int tilex = i % width;
+        int tiley = i / width;
+
+        data[i].Set(image, *global_palette, tilex, tiley);
+    }
+}
+
+void Sprite::WriteTile(unsigned char* arr, int x, int y) const
+{
+    int index = y * width + x;
+    const GBATile& tile = data[index];
+    for (unsigned int i = 0; i < TILE_SIZE; i++)
+    {
+        arr[i] = tile.data[i];
+    }
+}
+
+bool BlockSize::operator==(const BlockSize& rhs) const
+{
+    return width == rhs.width && height == rhs.height;
+}
+
+bool BlockSize::operator<(const BlockSize& rhs) const
+{
+    if (width != rhs.width)
+        return width < rhs.width;
+    else
+        return height < rhs.height;
+}
+
+std::vector<BlockSize> BlockSize::BiggerSizes(const BlockSize& b)
+{
+    switch(b.Size())
+    {
+        case 1:
+            return {BlockSize(2, 1), BlockSize(1, 2)};
+        case 2:
+            if (b.width == 2)
+                return {BlockSize(4, 1), BlockSize(2, 2)};
+            else
+                return {BlockSize(1, 4), BlockSize(2, 2)};
+        case 4:
+            if (b.width == 4)
+                return {BlockSize(4, 2)};
+            else if (b.height == 4)
+                return {BlockSize(2, 4)};
+            else
+                return {BlockSize(4, 2), BlockSize(2, 4)};
+        case 8:
+            return {BlockSize(4, 4)};
+        case 16:
+            return {BlockSize(8, 4), BlockSize(4, 8)};
+        case 32:
+            return {BlockSize(8, 8)};
+        default:
+            return {};
+    }
+}
+
+Block Block::VSplit()
+{
+    size.height /= 2;
+    return Block(x, y + size.height, size);
+}
+
+Block Block::HSplit()
+{
+    size.width /= 2;
+    return Block(x + size.width, y, size);
+}
+
+Block Block::Split(const BlockSize& to_this_size)
+{
+    if (size.width == to_this_size.width)
+        return VSplit();
+    else if (size.height == to_this_size.height)
+        return HSplit();
+    else
+    {
+        printf("%d %d => %d %d\n", size.width, size.height, to_this_size.width, to_this_size.height);
+        throw "Error Block::Split";
+    }
+
+    return Block();
+}
+
+bool SpriteCompare(const Sprite& lhs, const Sprite& rhs)
+{
+    if (lhs.Size() != rhs.Size())
+        return lhs.Size() > rhs.Size();
+    else
+        // Special case 2x2 should be of lesser priority than 4x1/1x4
+        // This is because 2x2's don't care how a 4x4 block is split they are happy with a 4x2 or 2x4
+        // Whereas 4x1 must get 4x2 and 1x4 must get 2x4.
+        return lhs.width + lhs.height > rhs.width + rhs.height;
+}
+
+SpriteSheet::SpriteSheet(const std::vector<Sprite>& _sprites) : sprites(_sprites)
+{
+    width = params.bpp == 4 ? 32 : 16;
+    height = params.for_bitmap ? 16 : 32;
+    image_data.resize(width * 8 * height * 8);
+}
+
+void SpriteSheet::Compile()
+{
+    PlaceSprites();
+    for (const auto& block : placedBlocks)
+    {
+        for (unsigned int i = 0; i < block.size.height; i++)
+        {
+            for (unsigned int j = 0; j < block.size.width; j++)
+            {
+                int x = block.x + j;
+                int y = block.y + i;
+                int index = y * width + x;
+                Sprite& sprite = sprites[block.sprite_id];
+                sprite.WriteTile(image_data.data() + index * 64, j, i);
+            }
+        }
+    }
+}
+
+void SpriteSheet::PlaceSprites()
+{
+    // Gimme some blocks.
+    BlockSize size(8, 8);
+    for (unsigned int y = 0; y < height; y += 8)
+    {
+        for (unsigned int x = 0; x < width; x += 8)
+        {
+            freeBlocks[size].push_back(Block(x, y, size));
+        }
+    }
+
+    // Sort by request size
+    std::sort(sprites.begin(), sprites.end(), SpriteCompare);
+
+    for (unsigned int i = 0; i < sprites.size(); i++)
+    {
+        Sprite& sprite = sprites[i];
+        BlockSize size(sprite.width, sprite.height);
+        std::list<BlockSize> slice;
+
+        // Mother may I have block of this size?
+        if (AssignBlockIfAvailable(size, sprite, i))
+            continue;
+
+        if (size.isBiggestSize())
+        {
+            std::stringstream oss;
+            oss << "[FATAL] Out of sprite memory could not allocate sprite " << sprite.name << " size (" << sprite.width << "," << sprite.height << ")";
+            throw oss.str();
+        }
+
+        slice.push_front(size);
+        while (!HasAvailableBlock(size))
+        {
+            std::vector<BlockSize> sizes = BlockSize::BiggerSizes(size);
+            if (sizes.empty())
+            {
+                std::stringstream oss;
+                oss << "[FATAL] Out of sprite memory could not allocate sprite " << sprite.name << " size (" << sprite.width << "," << sprite.height << ")";
+                throw oss.str();
+            }
+
+            // Default next search size will be last.
+            size = sizes.back();
+            for (auto& new_size : sizes)
+            {
+                if (HasAvailableBlock(new_size))
+                {
+                    size = new_size;
+                    break;
+                }
+            }
+            if (!HasAvailableBlock(size))
+                slice.push_front(size);
+        }
+
+        if (!HasAvailableBlock(size))
+        {
+            std::stringstream oss;
+            oss << "[FATAL] Out of sprite memory could not allocate sprite " << sprite.name << " size (" << sprite.width << "," << sprite.height << ")";
+            throw oss.str();
+        }
+
+        SliceBlock(size, slice);
+
+        size = BlockSize(sprite.width, sprite.height);
+        // Mother may I have block of this size?
+        if (AssignBlockIfAvailable(size, sprite, i))
+            continue;
+        else
+        {
+            std::stringstream oss;
+            oss << "[FATAL] Out of sprite memory could not allocate sprite " << sprite.name << " size (" << sprite.width << "," << sprite.height << ")";
+            throw oss.str();
+        }
+    }
+}
+
+
+bool SpriteSheet::AssignBlockIfAvailable(BlockSize& size, Sprite& sprite, unsigned int i)
+{
+    if (HasAvailableBlock(size))
+    {
+        // Yes you may deary.
+        Block allocd = freeBlocks[size].front();
+        freeBlocks[size].pop_front();
+        allocd.sprite_id = i;
+        sprite.offset = allocd.y * width + allocd.x;
+        placedBlocks.push_back(allocd);
+        return true;
+    }
+
+    return false;
+}
+
+bool SpriteSheet::HasAvailableBlock(const BlockSize& size)
+{
+    return !freeBlocks[size].empty();
+}
+
+void SpriteSheet::SliceBlock(const BlockSize& size, const std::list<BlockSize>& slice)
+{
+    Block toSplit = freeBlocks[size].front();
+    freeBlocks[size].pop_front();
+
+    for (const auto& split_size : slice)
+    {
+        Block other = toSplit.Split(split_size);
+        freeBlocks[split_size].push_back(other);
+    }
+
+    freeBlocks[toSplit.size].push_front(toSplit);
+}
+
+SpriteScene::SpriteScene(const std::vector<Image16Bpp>& images, const std::string& _name, bool _is2d, int _bpp) : name(_name), bpp(_bpp), is2d(_is2d)
+{
+    switch(bpp)
+    {
+        case 4:
+            Init4bpp(images);
+            break;
+        default:
+            Init8bpp(images);
+            break;
+    }
+}
+
+SpriteScene::SpriteScene(const std::vector<Image16Bpp>& images, const std::string& _name, bool _is2d, std::shared_ptr<Palette> _palette) :
+    name(_name), bpp(8), palette(_palette), is2d(_is2d)
+{
+    Init8bpp(images);
+}
+
+SpriteScene::SpriteScene(const std::vector<Image16Bpp>& images, const std::string& _name, bool _is2d, const std::vector<PaletteBank>& _paletteBanks) :
+    name(_name), bpp(4), paletteBanks(_paletteBanks), is2d(_is2d)
+{
+    Init4bpp(images);
+}
+
+void SpriteScene::Init4bpp(const std::vector<Image16Bpp>& images)
+{
+    if (paletteBanks.empty())
+    {
+        //For each image reduce to 4bpp and set in palette banks.
+    }
+
+}
+
+void SpriteScene::Init8bpp(const std::vector<Image16Bpp>& images)
+{
+    if (!palette)
+    {
+        Image8BppScene scene(images, name);
+        palette = scene.palette;
+    }
+
+    for (const auto& image : images)
+    {
+        sprites.push_back(Sprite(image, palette));
+    }
+}
+
+void SpriteScene::Build()
+{
+    if (is2d)
+    {
+        spriteSheet.reset(new SpriteSheet(sprites));
+        spriteSheet->Compile();
+    }
+    else
+    {
+        std::sort(sprites.begin(), sprites.end(), SpriteCompare);
+    }
 }

@@ -42,6 +42,10 @@ struct ExportParams
     int border;
     bool force;
     bool reduce;
+
+    // Sprite stuff
+    bool for_bitmap;
+    bool export_2d;
 };
 
 void DoMode0(const std::vector<Image16Bpp>& images);
@@ -49,6 +53,7 @@ void DoMode3(const std::vector<Image16Bpp>& images);
 void DoMode4(const std::vector<Image16Bpp>& images);
 void DoTilesetExport(const std::vector<Image16Bpp>& images);
 void DoMapExport(const std::vector<Image16Bpp>& images, const std::vector<Image16Bpp>& tilesets);
+void DoSpriteExport(const std::vector<Image16Bpp>& images);
 
 #define WARNING_WIDTH "\
 Warning: Image (%s) is too wide to fit on the gameboy screen\n\
@@ -65,6 +70,7 @@ void split(const std::string& s, char delimiter, std::vector<std::string>& token
 void Chop(std::string& filename);
 std::string Sanitize(const std::string& filename);
 std::string Format(const std::string& filename);
+unsigned int log2(unsigned int x);
 
 extern ExportParams params;
 

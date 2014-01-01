@@ -3,6 +3,7 @@
 
 #include <iterator>
 #include <iostream>
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -104,6 +105,7 @@ std::ostream& operator<<(std::ostream& file, const PaletteBank& bank);
 void WriteExportPaletteBanks(std::ostream& file, const std::string& name, const std::vector<PaletteBank>& banks);
 void WriteDataPaletteBanks(std::ostream& file, const std::string& name, const std::vector<PaletteBank>& banks);
 
+// TODO rewrite class passing in images to clean up.
 template <class T>
 class Tile
 {
@@ -116,9 +118,13 @@ class Tile
         Tile(const std::vector<T>& image, int pitch, int tilex, int tiley, int border = 0, int bpp = 8);
         Tile(const T* image, int pitch, int tilex, int tiley, int border = 0, int bpp = 8);
         Tile(std::shared_ptr<ImageTile> imageTile, int bpp);
+        // Constructs tile from image using global palette.
+        Tile(const Image16Bpp& image, const Palette& global_palette, int tilex, int tiley);
         ~Tile() {};
         void Set(const std::vector<T>& image, int pitch, int tilex, int tiley, int border = 0, int bpp = 8);
         void Set(const T* image, int pitch, int tilex, int tiley, int border = 0, int bpp = 8);
+        // 8bpp Set.  Constructs tile from image using global palette.
+        void Set(const Image16Bpp& image, const Palette& global_palette, int tilex, int tiley);
         void UsePalette(const PaletteBank& bank);
         bool IsEqual(const Tile<T>& other) const;
         bool IsSameAs(const Tile<T>& other) const;
@@ -203,6 +209,98 @@ class MapScene
         std::shared_ptr<Tileset> tileset;
 };
 
+class Sprite
+{
+    public:
+        Sprite() : width(0), height(0), palette_bank(0), size(0), shape(0), offset(0) {};
+        Sprite(const Image16Bpp& image, std::shared_ptr<Palette> global_palette);
+        void Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palette);
+        unsigned int Size() const {return width * height;};
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        void WriteTile(unsigned char* arr, int x, int y) const;
+        std::string name;
+        unsigned int width;
+        unsigned int height;
+        std::vector<GBATile> data;
+        std::shared_ptr<Palette> palette;
+        int palette_bank;
+        int size;
+        int shape;
+        int offset;
+};
+
+class BlockSize
+{
+    public:
+        BlockSize() : width(0), height(0) {};
+        BlockSize(unsigned int _width, unsigned int _height) : width(_width), height(_height) {};
+        bool operator==(const BlockSize& rhs) const;
+        bool operator<(const BlockSize& rhs) const;
+        unsigned int Size() const {return width * height;};
+        bool isBiggestSize() const {return width == 8 and height == 8;};
+        static std::vector<BlockSize> BiggerSizes(const BlockSize& b);
+        unsigned int width, height;
+
+};
+
+class Block
+{
+    public:
+        Block() : x(0), y(0), sprite_id(-1) {};
+        Block(int width, int height) : size(width, height), x(0), y(0), sprite_id(-1) {};
+        Block(const BlockSize& _size) : size(_size), x(0), y(0), sprite_id(-1) {};
+        Block(int _x, int _y, int width, int height) : size(width, height), x(_x), y(_y), sprite_id(-1) {};
+        Block(int _x, int _y, const BlockSize& _size) : size(_size), x(_x), y(_y), sprite_id(-1) {};
+        Block HSplit();
+        Block VSplit();
+        Block Split(const BlockSize& to_this_size);
+        BlockSize size;
+        int x;
+        int y;
+        int sprite_id;
+};
+
+class SpriteSheet
+{
+    public:
+        SpriteSheet(const std::vector<Sprite>& sprites);
+        void Compile();
+        std::map<BlockSize, std::list<Block>> freeBlocks;
+        std::vector<Sprite> sprites;
+        std::list<Block> placedBlocks;
+        std::vector<unsigned char> image_data;
+        unsigned int width, height;
+    private:
+        void PlaceSprites();
+        bool AssignBlockIfAvailable(BlockSize& size, Sprite& sprite, unsigned int i);
+        bool HasAvailableBlock(const BlockSize& size);
+        void SliceBlock(const BlockSize& size, const std::list<BlockSize>& slice);
+};
+
+class SpriteScene
+{
+    public:
+        SpriteScene(const std::vector<Image16Bpp>& images, const std::string& name, bool is2d, int bpp);
+        SpriteScene(const std::vector<Image16Bpp>& images, const std::string& name, bool is2d, std::shared_ptr<Palette> tileset);
+        SpriteScene(const std::vector<Image16Bpp>& images, const std::string& name, bool is2d, const std::vector<PaletteBank>& paletteBanks);
+        void Build();
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        std::string name;
+        std::vector<Sprite> sprites;
+        int bpp;
+        // Only one max will be used bpp = 4: paletteBanks 8: palette
+        std::shared_ptr<Palette> palette;
+        std::vector<PaletteBank> paletteBanks;
+        // Used if is2d is true
+        std::shared_ptr<SpriteSheet> spriteSheet;
+        bool is2d;
+    private:
+        void Init4bpp(const std::vector<Image16Bpp>& images);
+        void Init8bpp(const std::vector<Image16Bpp>& images);
+};
+
 template <class T>
 Tile<T>::Tile() : id(0), data(TILE_SIZE), bpp(8), palette_bank(0)
 {
@@ -217,6 +315,12 @@ template <class T>
 Tile<T>::Tile(std::shared_ptr<ImageTile> imageTile, int bpp)
 {
     printf("Not implemented");
+}
+
+template <class T>
+Tile<T>::Tile(const Image16Bpp& image, const Palette& global_palette, int tilex, int tiley) : data(TILE_SIZE), bpp(8)
+{
+    Set(image, global_palette, tilex, tiley);
 }
 
 template <class T>
@@ -259,6 +363,12 @@ void Tile<T>::Set(const T* image, int pitch, int tilex, int tiley, int border, i
             ptr[i * 8 + j] = image[(tiley * (8+border) + i) * pitch + tilex * (8+border) + j];
         }
     }
+}
+
+template <class T>
+void Tile<T>::Set(const Image16Bpp& image, const Palette& global_palette, int tilex, int tiley)
+{
+    printf("Not implemented");
 }
 
 template <class T>

@@ -118,3 +118,8 @@ void ExportFile::AddMap(std::shared_ptr<Map> map)
 {
     maps.push_back(map);
 }
+
+void ExportFile::AddScene(std::shared_ptr<SpriteScene> scene)
+{
+    spriteScene = scene;
+}

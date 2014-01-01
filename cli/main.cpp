@@ -42,7 +42,7 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
     {wxCMD_LINE_SWITCH, "log", "log", "Debug logging", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
 
     // Modes
-    {wxCMD_LINE_SWITCH, "mode0", "mode0", "Export image for use in mode0 (Not implemented do not use)",
+    {wxCMD_LINE_SWITCH, "mode0", "mode0", "Export image for use in mode0",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "bpp", "bpp", "Bits per pixel only for use with -mode0 or -sprites (Default 8).",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
@@ -50,7 +50,7 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "mode4", "mode4", "Export image for use in mode4",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
-    {wxCMD_LINE_SWITCH, "sprites", "sprites", "Treat image as a GBA sprite sheet (Not implemented do not use)",
+    {wxCMD_LINE_SWITCH, "sprites", "sprites", "Treat image as a GBA sprite sheet",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "tiles", "tiles", "Treat image as a tileset (tile image sheet) and export a palette and tile array.",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
@@ -101,6 +101,13 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         "For mode 0 4bpp export only.  If the program complains about a badly formatted map, forces the program to export anyway (NOT IMPLEMENTED YET).",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
 
+    // Sprite exclusive options
+    {wxCMD_LINE_SWITCH, "export_2d", "export_2d",
+        "For sprites export only. Exports sprites for use in sprite 2d mode (Default false).",
+        wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_SWITCH, "for_bitmap", "for_bitmap",
+        "For sprites export only.  Exports sprites for use in modes 3 and 4 (Default false).",
+        wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
 
     // Advanced Mode 4 options Use at your own risk.
     {wxCMD_LINE_OPTION, "weights", "weights",
@@ -168,9 +175,13 @@ long dither_level = 80;
 wxString tileset = "";
 long split_sbb = -1;
 long border = 0;
+bool force = false;
+// Sprite options
+bool export_2d = false;
+bool for_bitmap = false;
+
 bool hide = false;
 bool full_palette = false;
-bool force = false;
 
 // Tileset names will be here
 std::vector<std::string> tilesets;
@@ -232,6 +243,9 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     parser.Found(_("border"), &border);
     force = parser.Found(_("force"));
 
+    export_2d = parser.Found(_("export_2d"));
+    for_bitmap = parser.Found(_("for_bitmap"));
+
     hide = parser.Found(_("hide"));
     full_palette = parser.Found(_("fullpalette"));
 
@@ -279,6 +293,8 @@ bool BrandonToolsApp::Validate()
     params.bpp = bpp;
     params.border = border;
     params.force = force;
+    params.export_2d = export_2d;
+    params.for_bitmap = for_bitmap;
 
     // Mode check
     if (mode0 + mode3 + mode4 + sprites + map + tiles != 1)
@@ -567,7 +583,7 @@ bool BrandonToolsApp::DoExportImages()
             DoMode4(images);
             break;
         case SPRITES:
-            printf("NOT IMPLEMENTED YET SILLY");
+            DoSpriteExport(images);
             return false;
         case TILES:
             DoTilesetExport(images);

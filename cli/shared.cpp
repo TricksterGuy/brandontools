@@ -51,3 +51,10 @@ std::string Format(const std::string& file)
     Chop(filename);
     return Sanitize(filename);
 }
+
+unsigned int log2(unsigned int x)
+{
+    unsigned int result = 0;
+    while (x >>= 1) result++;
+    return result;
+}
