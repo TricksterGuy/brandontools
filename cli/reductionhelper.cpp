@@ -1123,7 +1123,7 @@ bool SpriteCompare(const Sprite& lhs, const Sprite& rhs)
 SpriteSheet::SpriteSheet(const std::vector<Sprite>& _sprites, const std::string& _name, int _bpp) : sprites(_sprites), name(_name), bpp(_bpp)
 {
     width = bpp == 4 ? 32 : 16;
-    height = params.for_bitmap ? 16 : 32;
+    height = !params.for_bitmap ? 32 : 16;
     data.resize(width * 8 * height * 8);
 }
 
@@ -1255,7 +1255,8 @@ bool SpriteSheet::AssignBlockIfAvailable(BlockSize& size, Sprite& sprite, unsign
         Block allocd = freeBlocks[size].front();
         freeBlocks[size].pop_front();
         allocd.sprite_id = i;
-        sprite.offset = allocd.y * width + allocd.x;
+        //printf("%d %d %d\n", i, allocd.x, allocd.y);
+        sprite.offset = (allocd.y * width + allocd.x) * (params.bpp == 4 ? 1 : 2);
         placedBlocks.push_back(allocd);
         return true;
     }
