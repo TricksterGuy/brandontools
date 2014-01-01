@@ -1161,6 +1161,11 @@ void SpriteSheet::WriteExport(std::ostream& file) const
     WriteExternShortArray(file, name, "", size);
     WriteDefine(file, name, "_SIZE", size);
     WriteNewLine(file);
+
+    for (const auto& sprite : sprites)
+    {
+        sprite.WriteExport(file);
+    }
 }
 
 void SpriteSheet::PlaceSprites()
@@ -1376,11 +1381,11 @@ void SpriteScene::WriteExport(std::ostream& file) const
         WriteExternShortArray(file, name, "", Size());
         WriteDefine(file, name, "_SIZE", Size());
         WriteNewLine(file);
-    }
 
-    for (const auto& sprite : sprites)
-    {
-        sprite.WriteExport(file);
+        for (const auto& sprite : sprites)
+        {
+            sprite.WriteExport(file);
+        }
     }
 }
 
