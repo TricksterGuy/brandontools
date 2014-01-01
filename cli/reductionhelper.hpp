@@ -228,6 +228,8 @@ class Sprite
         int size;
         int shape;
         int offset;
+
+    friend std::ostream& operator<<(std::ostream& file, const Sprite& sprite);
 };
 
 class BlockSize
@@ -264,13 +266,17 @@ class Block
 class SpriteSheet
 {
     public:
-        SpriteSheet(const std::vector<Sprite>& sprites);
+        SpriteSheet(const std::vector<Sprite>& sprites, const std::string& name, int bpp);
         void Compile();
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
         std::map<BlockSize, std::list<Block>> freeBlocks;
         std::vector<Sprite> sprites;
         std::list<Block> placedBlocks;
-        std::vector<unsigned char> image_data;
+        std::vector<unsigned char> data;
         unsigned int width, height;
+        std::string name;
+        int bpp;
     private:
         void PlaceSprites();
         bool AssignBlockIfAvailable(BlockSize& size, Sprite& sprite, unsigned int i);
@@ -287,6 +293,7 @@ class SpriteScene
         void Build();
         void WriteData(std::ostream& file) const;
         void WriteExport(std::ostream& file) const;
+        unsigned int Size() const;
         std::string name;
         std::vector<Sprite> sprites;
         int bpp;

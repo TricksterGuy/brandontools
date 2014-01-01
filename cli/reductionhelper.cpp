@@ -580,7 +580,7 @@ void Tileset::WriteExport(std::ostream& file) const
     else
         WriteExportPaletteBanks(file, name, paletteBanks);
 
-    WriteDefine(file, name, "_PALETTE_TYPE", (bpp == 4) ? "(0 << 7)" : "(1 << 7)");
+    WriteDefine(file, name, "_PALETTE_TYPE", (bpp == 8), 7);
     WriteNewLine(file);
 
     WriteExternShortArray(file, name, "_tiles", Size());
@@ -940,7 +940,7 @@ void Map::WriteExport(std::ostream& file) const
     WriteDefine(file, name, "_WIDTH", width);
     WriteDefine(file, name, "_HEIGHT", height);
     WriteDefine(file, name, "_MAP_SIZE", Size());
-    WriteDefine(file, name, "_MAP_TYPE", Type());
+    WriteDefine(file, name, "_MAP_TYPE", Type(), 14);
     WriteNewLine(file);
 }
 
@@ -1017,6 +1017,26 @@ void Sprite::WriteTile(unsigned char* arr, int x, int y) const
     {
         arr[i] = tile.data[i];
     }
+}
+
+void Sprite::WriteExport(std::ostream& file) const
+{
+    WriteDefine(file, name, "_PALETTE", palette_bank, 12);
+    WriteDefine(file, name, "_SHAPE", shape, 14);
+    WriteDefine(file, name, "_SIZE", size, 14);
+    WriteDefine(file, name, "_ID", offset | (params.for_bitmap ? 512 : 0));
+
+}
+
+std::ostream& operator<<(std::ostream& file, const Sprite& sprite)
+{
+    for (unsigned int i = 0; i < sprite.data.size(); i++)
+    {
+        file << sprite.data[i];
+        if (i != sprite.data.size() - 1)
+            file << ",\n\t";
+    }
+    return file;
 }
 
 bool BlockSize::operator==(const BlockSize& rhs) const
@@ -1099,11 +1119,11 @@ bool SpriteCompare(const Sprite& lhs, const Sprite& rhs)
         return lhs.width + lhs.height > rhs.width + rhs.height;
 }
 
-SpriteSheet::SpriteSheet(const std::vector<Sprite>& _sprites) : sprites(_sprites)
+SpriteSheet::SpriteSheet(const std::vector<Sprite>& _sprites, const std::string& _name, int _bpp) : sprites(_sprites), name(_name), bpp(_bpp)
 {
-    width = params.bpp == 4 ? 32 : 16;
+    width = bpp == 4 ? 32 : 16;
     height = params.for_bitmap ? 16 : 32;
-    image_data.resize(width * 8 * height * 8);
+    data.resize(width * 8 * height * 8);
 }
 
 void SpriteSheet::Compile()
@@ -1119,10 +1139,27 @@ void SpriteSheet::Compile()
                 int y = block.y + i;
                 int index = y * width + x;
                 Sprite& sprite = sprites[block.sprite_id];
-                sprite.WriteTile(image_data.data() + index * 64, j, i);
+                sprite.WriteTile(data.data() + index * 64, j, i);
             }
         }
     }
+}
+
+void SpriteSheet::WriteData(std::ostream& file) const
+{
+    if (bpp == 8)
+        WriteShortArray(file, name, "", data, 8);
+    else
+        WriteShortArray4Bit(file, name, "", data, 8);
+    WriteNewLine(file);
+}
+
+void SpriteSheet::WriteExport(std::ostream& file) const
+{
+    unsigned int size = data.size() / (bpp == 4 ? 4 : 2);
+    WriteExternShortArray(file, name, "", size);
+    WriteDefine(file, name, "_SIZE", size);
+    WriteNewLine(file);
 }
 
 void SpriteSheet::PlaceSprites()
@@ -1204,7 +1241,6 @@ void SpriteSheet::PlaceSprites()
     }
 }
 
-
 bool SpriteSheet::AssignBlockIfAvailable(BlockSize& size, Sprite& sprite, unsigned int i)
 {
     if (HasAvailableBlock(size))
@@ -1265,6 +1301,88 @@ SpriteScene::SpriteScene(const std::vector<Image16Bpp>& images, const std::strin
     Init4bpp(images);
 }
 
+void SpriteScene::Build()
+{
+    if (is2d)
+    {
+        spriteSheet.reset(new SpriteSheet(sprites, name, bpp));
+        spriteSheet->Compile();
+    }
+    else
+    {
+        std::sort(sprites.begin(), sprites.end(), SpriteCompare);
+        unsigned int offset = 0;
+        for (auto& sprite : sprites)
+        {
+            sprite.offset = offset;
+            offset += sprite.width * sprite.height;
+        }
+    }
+}
+
+unsigned int SpriteScene::Size() const
+{
+    unsigned int total = 0;
+    for (const auto& sprite : sprites)
+        total += sprite.width * sprite.height;
+
+    return total * (bpp == 4 ? TILE_SIZE_SHORTS_4BPP : TILE_SIZE_SHORTS_8BPP);
+}
+
+void SpriteScene::WriteData(std::ostream& file) const
+{
+    if (bpp == 4)
+        WriteDataPaletteBanks(file, name, paletteBanks);
+    else
+        palette->WriteData(file);
+
+    if (is2d)
+    {
+        spriteSheet->WriteData(file);
+    }
+    else
+    {
+        file << "const unsigned short " << name << "[" << Size() << "] =\n{\n\t";
+        for (unsigned int i = 0; i < sprites.size(); i++)
+        {
+            file << sprites[i];
+            if (i != sprites.size() - 1)
+                file << ",\n\t";
+        }
+        file << "\n};\n";
+        WriteNewLine(file);
+    }
+}
+
+void SpriteScene::WriteExport(std::ostream& file) const
+{
+    WriteDefine(file, name, "_PALETTE_TYPE", bpp == 8, 13);
+    WriteDefine(file, name, "_DIMENSION_TYPE", !is2d, 6);
+
+    if (bpp == 4)
+        WriteExportPaletteBanks(file, name, paletteBanks);
+    else
+        palette->WriteExport(file);
+
+
+    if (is2d)
+    {
+        spriteSheet->WriteExport(file);
+    }
+    else
+    {
+        WriteExternShortArray(file, name, "", Size());
+        WriteDefine(file, name, "_SIZE", Size());
+        WriteNewLine(file);
+    }
+
+    for (const auto& sprite : sprites)
+    {
+        sprite.WriteExport(file);
+    }
+}
+
+
 void SpriteScene::Init4bpp(const std::vector<Image16Bpp>& images)
 {
     if (paletteBanks.empty())
@@ -1285,18 +1403,5 @@ void SpriteScene::Init8bpp(const std::vector<Image16Bpp>& images)
     for (const auto& image : images)
     {
         sprites.push_back(Sprite(image, palette));
-    }
-}
-
-void SpriteScene::Build()
-{
-    if (is2d)
-    {
-        spriteSheet.reset(new SpriteSheet(sprites));
-        spriteSheet->Compile();
-    }
-    else
-    {
-        std::sort(sprites.begin(), sprites.end(), SpriteCompare);
     }
 }

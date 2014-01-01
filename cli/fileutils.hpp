@@ -19,6 +19,8 @@ void WriteShortArray(std::ostream& file, const std::string& name, const std::str
                      const std::vector<unsigned char>& data, unsigned int items_per_row);
 void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append,
                      const std::vector<Color>& data, unsigned int items_per_row);
+void WriteShortArray4Bit(std::ostream& file, const std::string& name, const std::string& append,
+                     const std::vector<unsigned char>& data, unsigned int items_per_row);
 void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::string& append,
                         const std::vector<std::string>& names, unsigned short items_per_row);
 void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::string& append,
@@ -30,6 +32,7 @@ void WriteHeaderGuard(std::ostream& file, const std::string& name, const std::st
 void WriteEndHeaderGuard(std::ostream& file);
 void WriteNewLine(std::ostream& file);
 void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, int value);
+void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, int value, int shift);
 void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, const std::string& value);
 
 #endif

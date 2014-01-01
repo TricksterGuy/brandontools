@@ -45,6 +45,22 @@ void WriteShortArray(std::ostream& file, const std::string& name, const std::str
     file << "\n};\n";
 }
 
+void WriteShortArray4Bit(std::ostream& file, const std::string& name, const std::string& append, const std::vector<unsigned char>& data, unsigned int items_per_row)
+{
+    unsigned int size = data.size() / 4;
+    file << "const unsigned short " << name << append << "[" << size << "] =\n{\n\t";
+    for (unsigned int i = 0; i < size; i++)
+    {
+        unsigned char px1 = data[4 * i];
+        unsigned char px2 = data[4 * i + 1];
+        unsigned char px3 = data[4 * i + 2];
+        unsigned char px4 = data[4 * i + 3];
+        unsigned short shrt = (px4 << 12) | (px3 << 8) | (px2 << 4) | px1;
+        WriteElement(file, shrt, size, i, items_per_row);
+    }
+    file << "\n};\n";
+}
+
 void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<Color>& data, unsigned int items_per_row)
 {
     int x, y, z;
@@ -116,6 +132,13 @@ void WriteDefine(std::ostream& file, const std::string& name, const std::string&
     std::string name_cap = ToUpper(name);
     file << "#define " << name_cap << append << " " << value << "\n";
 }
+
+void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, int value, int shift)
+{
+    std::string name_cap = ToUpper(name);
+    file << "#define " << name_cap << append << " (" << value << " << " << shift << ")\n";
+}
+
 
 void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, const std::string& value)
 {

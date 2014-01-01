@@ -102,6 +102,12 @@ void HeaderFile::Write(std::ostream& file)
         names.push_back(map.name + "_map");
     }
 
+    if (spriteScene)
+    {
+        const SpriteScene& scene = *spriteScene;
+        scene.WriteExport(file);
+    }
+
     if (params.animated && names.size() > 1)
     {
         WriteExternShortPtrArray(file, params.name, "_frames", names.size());
