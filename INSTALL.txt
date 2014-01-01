@@ -1,0 +1,12 @@
+Its better if you clone my repo instead of downloading the source in case something is found broken and I fix it.
+
+To install brandontools
+-----------------------
+1) Install dependancies.  You should already have wxwidgets 2.9 by the complx install instructions. If not then go back and install wxwidgets 2.9
+   However this time you need ImageMagick or magick++ specifically. so get that terminal ready
+   sudo apt-get install libmagick++-dev libmagickcore-dev libmagickwand-dev
+2) Time to build the program in a terminal in the root of the source tree, this the same directory where this file you are reading is located, execute the following.
+    make && sudo make install
+    if there are any errors please report them to me directly.
+3) Type brandontools in a terminal if it says 1.0.0.0 or whatever the version number is now plus an error message about not specifying array name + input files then you are set up.
+4) Read the included readme file on how to use the program.

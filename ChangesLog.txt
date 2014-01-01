@@ -1,3 +1,14 @@
+1 January 2014
+   released version 1.0.0 of BrandonTools
+     Change log:
+        -New: Mode 0 Support (4bpp and 8bpp)
+	-New: Tiles Only Export
+	-New: Map Only Export (given a tileset)
+	-New: Sprites Export (4bpp and 8bpp, 2d and 1d, bitmap mode)
+	-Fixed: Transparent Color handling transparent color will always be palette entry 0 (if palette modes).  This also means that it will be the background color in mode4, but in mode0 it will be completely ignored
+	-New: Major design changes in code.
+	-Removed: Gimp mode4 support.
+
 20 October 2013
    released version 0.9.5 of BrandonTools
      Change log:

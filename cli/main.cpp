@@ -91,14 +91,14 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
 
     // Mode 0 exclusive options
     {wxCMD_LINE_OPTION, "split_sbb", "split_sbb", "(Usage -split_sbb=1-4) Given a big map image (>1024,1024) split it into multiple maps."
-        " 1 = (32, 32), 2 = (64, 32), 3 = (32, 64), 4 = (64, 64). Image must be divisible by split size * 8.",
+        " 1 = (32, 32), 2 = (64, 32), 3 = (32, 64), 4 = (64, 64). Image must be divisible by split size * 8 (NOT IMPLEMENTED).",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "tileset", "tileset", "Tileset image(s) to export against when using -map.",
         wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "border", "border", "Border around each tile in tileset image",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "force", "force",
-        "For mode 0 4bpp export only.  If the program complains about a badly formatted map, forces the program to export anyway (NOT IMPLEMENTED YET).",
+        "For mode 0 4bpp export only.  If the program complains about a badly formatted map or sprite, forces the program to export anyway (NOT IMPLEMENTED YET).",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
 
     // Sprite exclusive options
