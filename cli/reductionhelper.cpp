@@ -15,19 +15,19 @@
 const int sprite_shapes[16] =
 {
 //h =  1,  2, 4,  8
-       0,  2, 2, -1, // width = 1
-       1,  0, 2, -1, // width = 2
-       1,  1, 0,  2, // width = 4
-      -1, -1, 1,  0  // width = 8
+    0,  2, 2, -1, // width = 1
+    1,  0, 2, -1, // width = 2
+    1,  1, 0,  2, // width = 4
+    -1, -1, 1,  0  // width = 8
 };
 
 const int sprite_sizes[16] =
 {
 //h =  1,  2, 4,  8
-       0,  0, 1, -1, // width = 1
-       0,  1, 2, -1, // width = 2
-       1,  2, 2,  3, // width = 4
-      -1, -1, 3,  3  // width = 8
+    0,  0, 1, -1, // width = 1
+    0,  1, 2, -1, // width = 2
+    1,  2, 2,  3, // width = 4
+    -1, -1, 3,  3  // width = 8
 };
 
 
@@ -488,15 +488,15 @@ Tileset::Tileset(const std::vector<Image16Bpp>& images, const std::string& _name
 {
     switch(bpp)
     {
-        case 4:
-            Init4bpp(images);
-            break;
-        case 8:
-            Init8bpp(images);
-            break;
-        case 16:
-            Init16bpp(images);
-            break;
+    case 4:
+        Init4bpp(images);
+        break;
+    case 8:
+        Init8bpp(images);
+        break;
+    case 16:
+        Init16bpp(images);
+        break;
     }
 }
 
@@ -506,15 +506,15 @@ Tileset::Tileset(const Image16Bpp& image, int _bpp) : name(image.name), bpp(_bpp
     images.push_back(image);
     switch(bpp)
     {
-        case 4:
-            Init4bpp(images);
-            break;
-        case 8:
-            Init8bpp(images);
-            break;
-        case 16:
-            Init16bpp(images);
-            break;
+    case 4:
+        Init4bpp(images);
+        break;
+    case 8:
+        Init8bpp(images);
+        break;
+    case 16:
+        Init16bpp(images);
+        break;
     }
 }
 
@@ -822,12 +822,12 @@ Map::Map(const Image16Bpp& image, int bpp) : width(image.width / 8), height(imag
     // Tile match each tile in image
     switch(bpp)
     {
-        case 4:
-            Init4bpp(image);
-            break;
-        default:
-            Init8bpp(image);
-            break;
+    case 4:
+        Init4bpp(image);
+        break;
+    default:
+        Init8bpp(image);
+        break;
     }
 }
 
@@ -846,12 +846,12 @@ void Map::Set(const Image16Bpp& image, std::shared_ptr<Tileset> global_tileset)
 
     switch(tileset->bpp)
     {
-        case 4:
-            Init4bpp(image);
-            break;
-        default:
-            Init8bpp(image);
-            break;
+    case 4:
+        Init4bpp(image);
+        break;
+    default:
+        Init8bpp(image);
+        break;
     }
 }
 
@@ -981,6 +981,64 @@ Sprite::Sprite(const Image16Bpp& image, std::shared_ptr<Palette> global_palette)
     Set(image, global_palette);
 }
 
+Sprite::Sprite(const Image16Bpp& image, int bpp)
+{
+    name = image.name;
+    width = image.width / 8;
+    height = image.height / 8;
+    data.resize(width * height);
+    offset = 0;
+
+    unsigned int key = (log2(width) << 2) | log2(height);
+    shape = sprite_shapes[key];
+    size = sprite_sizes[key];
+    if (size == -1)
+    {
+        std::stringstream oss;
+        oss << "[FATAL] Invalid sprite size (" << width << ", " << height << ")\nPlease fix.";
+        throw oss.str();
+    }
+
+    // bpp reduce minus one for the transparent color
+    int num_colors = (1 << bpp) - 1;
+    const unsigned short* imgdata = image.pixels.data();
+    unsigned int size = image.pixels.size();
+    int weights[4] = {25, 25, 25, 25};
+
+    std::vector<Color> pixels;
+    pixels.reserve(size);
+
+    std::vector<Color> paletteArray;
+    paletteArray.reserve(num_colors + 1);
+
+    for (unsigned int i = 0; i < size; i++)
+    {
+        unsigned short pix = imgdata[i];
+        if (pix != params.transparent_color)
+            pixels.push_back(Color(pix));
+    }
+    paletteArray.push_back(Color(params.transparent_color));
+    MedianCut(pixels, num_colors, paletteArray, weights);
+
+    palette.reset(new Palette(paletteArray, ""));
+
+    std::vector<unsigned char> data4bpp(size);
+    for (unsigned int i = 0; i < size; i++)
+    {
+        unsigned short pix = imgdata[i];
+        data4bpp[i] = (pix != params.transparent_color) ? palette->Search(pix) : 0;
+    }
+
+    for (unsigned int i = 0; i < data.size(); i++)
+    {
+        int tilex = i % width;
+        int tiley = i / width;
+
+        data[i].Set(data4bpp, image.width, tilex, tiley, 0, 4);
+        data[i].palette = *palette;
+    }
+}
+
 void Sprite::Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palette)
 {
     name = image.name;
@@ -1007,6 +1065,13 @@ void Sprite::Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palett
 
         data[i].Set(image, *global_palette, tilex, tiley);
     }
+}
+
+void Sprite::UsePalette(const PaletteBank& bank)
+{
+    for (auto& tile : data)
+        tile.UsePalette(bank);
+    palette->Set(bank.colors);
 }
 
 void Sprite::WriteTile(unsigned char* arr, int x, int y) const
@@ -1057,28 +1122,28 @@ std::vector<BlockSize> BlockSize::BiggerSizes(const BlockSize& b)
 {
     switch(b.Size())
     {
-        case 1:
-            return {BlockSize(2, 1), BlockSize(1, 2)};
-        case 2:
-            if (b.width == 2)
-                return {BlockSize(4, 1), BlockSize(2, 2)};
-            else
-                return {BlockSize(1, 4), BlockSize(2, 2)};
-        case 4:
-            if (b.width == 4)
-                return {BlockSize(4, 2)};
-            else if (b.height == 4)
-                return {BlockSize(2, 4)};
-            else
-                return {BlockSize(4, 2), BlockSize(2, 4)};
-        case 8:
-            return {BlockSize(4, 4)};
-        case 16:
-            return {BlockSize(8, 4), BlockSize(4, 8)};
-        case 32:
-            return {BlockSize(8, 8)};
-        default:
-            return {};
+    case 1:
+        return {BlockSize(2, 1), BlockSize(1, 2)};
+    case 2:
+        if (b.width == 2)
+            return {BlockSize(4, 1), BlockSize(2, 2)};
+        else
+            return {BlockSize(1, 4), BlockSize(2, 2)};
+    case 4:
+        if (b.width == 4)
+            return {BlockSize(4, 2)};
+        else if (b.height == 4)
+            return {BlockSize(2, 4)};
+        else
+            return {BlockSize(4, 2), BlockSize(2, 4)};
+    case 8:
+        return {BlockSize(4, 4)};
+    case 16:
+        return {BlockSize(8, 4), BlockSize(4, 8)};
+    case 32:
+        return {BlockSize(8, 8)};
+    default:
+        return {};
     }
 }
 
@@ -1287,12 +1352,12 @@ SpriteScene::SpriteScene(const std::vector<Image16Bpp>& images, const std::strin
 {
     switch(bpp)
     {
-        case 4:
-            Init4bpp(images);
-            break;
-        default:
-            Init8bpp(images);
-            break;
+    case 4:
+        Init4bpp(images);
+        break;
+    default:
+        Init8bpp(images);
+        break;
     }
 }
 
@@ -1322,7 +1387,7 @@ void SpriteScene::Build()
         for (auto& sprite : sprites)
         {
             sprite.offset = offset;
-            offset += sprite.width * sprite.height;
+            offset += sprite.width * sprite.height * (bpp == 8 ? 2 : 1);
         }
     }
 }
@@ -1390,14 +1455,89 @@ void SpriteScene::WriteExport(std::ostream& file) const
     }
 }
 
+bool SpritePaletteSizeComp(const Sprite& i, const Sprite& j)
+{
+    return i.palette->Size() > j.palette->Size();
+}
 
 void SpriteScene::Init4bpp(const std::vector<Image16Bpp>& images)
 {
-    if (paletteBanks.empty())
+    // TODO handle this case.  Force each sprite to choose their palette instead of making their own
+    if (!paletteBanks.empty())
     {
         //For each image reduce to 4bpp and set in palette banks.
     }
+    else
+    {
+        // Initialize Palette Banks
+        paletteBanks.reserve(16);
+        for (int i = 0; i < 16; i++)
+            paletteBanks.push_back(PaletteBank(i));
 
+        // Form sprites
+        for (const auto& image : images)
+            sprites.push_back(Sprite(image, bpp));
+
+        // Palette bank selection time
+        // Ensure image contains < 256 colors
+        std::set<Color> bigPalette;
+        for (const auto& sprite : sprites)
+        {
+            const std::vector<Color>& sprite_palette = sprite.palette->colors;
+            bigPalette.insert(sprite_palette.begin(), sprite_palette.end());
+        }
+
+        if (bigPalette.size() > 256 && !params.force)
+        {
+            std::stringstream oss;
+            oss << "[ERROR] Image after reducing sprites to 4bpp still contains more than 256 distinct colors.  Found " << bigPalette.size() << " colors. Please fix.";
+            throw oss.str();
+        }
+
+        // Greedy approach deal with tiles with largest palettes first.
+        std::sort(sprites.begin(), sprites.end(), SpritePaletteSizeComp);
+
+        // But deal with transparent color
+        for (unsigned int i = 0; i < paletteBanks.size(); i++)
+            paletteBanks[i].Add(Color());
+
+        // Construct palette banks, assign bank id to tile, remap sprite to palette bank given, assign tile ids
+        for (auto& sprite : sprites)
+        {
+            int pbank = -1;
+            // Fully contains checks
+            for (unsigned int i = 0; i < paletteBanks.size(); i++)
+            {
+                PaletteBank& bank = paletteBanks[i];
+                if (bank.Contains(*sprite.palette))
+                    pbank = i;
+            }
+
+            // Ok then find least affected bank
+            if (pbank == -1)
+            {
+                int max_colors_left = -1;
+                for (unsigned int i = 0; i < paletteBanks.size(); i++)
+                {
+                    PaletteBank& bank = paletteBanks[i];
+                    int colors_left = bank.CanMerge(*sprite.palette);
+                    if (colors_left != 0 && max_colors_left < colors_left)
+                    {
+                        max_colors_left = colors_left;
+                        pbank = i;
+                    }
+                }
+            }
+            // Cry and die for now. Unless you tell me to keep going.
+            if (pbank == -1 && !params.force)
+                throw "More than 16 distinct palettes found, please use 8bpp mode.";
+
+            // Merge step and assign palette bank
+            paletteBanks[pbank].Merge(*sprite.palette);
+            sprite.palette_bank = pbank;
+            sprite.UsePalette(paletteBanks[pbank]);
+        }
+    }
 }
 
 void SpriteScene::Init8bpp(const std::vector<Image16Bpp>& images)

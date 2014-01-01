@@ -214,8 +214,11 @@ class Sprite
     public:
         Sprite() : width(0), height(0), palette_bank(0), size(0), shape(0), offset(0) {};
         Sprite(const Image16Bpp& image, std::shared_ptr<Palette> global_palette);
+        Sprite(const Image16Bpp& image, int bpp);
         void Set(const Image16Bpp& image, std::shared_ptr<Palette> global_palette);
+        void Set(const Image16Bpp& image, int bpp);
         unsigned int Size() const {return width * height;};
+        void UsePalette(const PaletteBank& bank);
         void WriteData(std::ostream& file) const;
         void WriteExport(std::ostream& file) const;
         void WriteTile(unsigned char* arr, int x, int y) const;

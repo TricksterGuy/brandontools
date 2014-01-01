@@ -584,7 +584,6 @@ bool BrandonToolsApp::DoExportImages()
             break;
         case SPRITES:
             DoSpriteExport(images);
-            return false;
         case TILES:
             DoTilesetExport(images);
             break;
