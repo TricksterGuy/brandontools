@@ -1021,11 +1021,12 @@ void Sprite::WriteTile(unsigned char* arr, int x, int y) const
 
 void Sprite::WriteExport(std::ostream& file) const
 {
-    WriteDefine(file, name, "_PALETTE", palette_bank, 12);
+    if (params.bpp == 4)
+        WriteDefine(file, name, "_PALETTE", palette_bank, 12);
     WriteDefine(file, name, "_SHAPE", shape, 14);
     WriteDefine(file, name, "_SIZE", size, 14);
     WriteDefine(file, name, "_ID", offset | (params.for_bitmap ? 512 : 0));
-
+    WriteNewLine(file);
 }
 
 std::ostream& operator<<(std::ostream& file, const Sprite& sprite)
@@ -1358,6 +1359,7 @@ void SpriteScene::WriteExport(std::ostream& file) const
 {
     WriteDefine(file, name, "_PALETTE_TYPE", bpp == 8, 13);
     WriteDefine(file, name, "_DIMENSION_TYPE", !is2d, 6);
+    WriteNewLine(file);
 
     if (bpp == 4)
         WriteExportPaletteBanks(file, name, paletteBanks);

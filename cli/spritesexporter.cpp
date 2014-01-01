@@ -16,8 +16,8 @@ void DoSpriteExport(const std::vector<Image16Bpp>& images)
     try
     {
         // Set mode
-        header.SetMode(params.for_bitmap ? 3 : 0);
-        implementation.SetMode(params.for_bitmap ? 3 : 0);
+        header.SetMode(0);
+        implementation.SetMode(0);
 
         // Do the work of sprite conversion.
         // Form the sprite scene and then add it to header and implementation

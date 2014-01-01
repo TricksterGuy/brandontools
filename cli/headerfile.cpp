@@ -9,7 +9,7 @@
 
 HeaderFile header;
 
-const char* types[4] = {"_BITMAP_H", "_TILEMAP_H", "_TILESET_H", "_MAP_H"};
+const char* types[5] = {"_BITMAP_H", "_TILEMAP_H", "_TILESET_H", "_MAP_H", "_SPRITES_H"};
 
 void HeaderFile::Write(std::ostream& file)
 {
