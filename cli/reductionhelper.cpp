@@ -1505,7 +1505,7 @@ void SpriteScene::Init4bpp(const std::vector<Image16Bpp>& images)
 
         // But deal with transparent color
         for (unsigned int i = 0; i < paletteBanks.size(); i++)
-            paletteBanks[i].Add(Color());
+            paletteBanks[i].Add(Color(params.transparent_color));
 
         // Construct palette banks, assign bank id to tile, remap sprite to palette bank given, assign tile ids
         for (auto& sprite : sprites)
