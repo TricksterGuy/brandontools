@@ -13,41 +13,18 @@
 
 void DoTilesetExport(const std::vector<Image16Bpp>& images)
 {
-    try
-    {
-        // Set mode
-        header.SetMode(0);
-        implementation.SetMode(0);
+    // Set mode
+    header.SetMode(0);
+    implementation.SetMode(0);
 
-        // Do the work of mode 0 conversion.
-        // Form the tileset and then add it to header and implementation
-        std::shared_ptr<Tileset> tileset(new Tileset(images, params.name, params.bpp));
+    // Do the work of mode 0 conversion.
+    // Form the tileset and then add it to header and implementation
+    std::shared_ptr<Tileset> tileset(new Tileset(images, params.name, params.bpp));
 
-        header.SetPalette(tileset->palette);
-        implementation.SetPalette(tileset->palette);
+    header.SetPalette(tileset->palette);
+    implementation.SetPalette(tileset->palette);
 
-        header.AddTileset(tileset);
-        implementation.AddTileset(tileset);
-    }
-    catch (const std::exception& ex)
-    {
-        printf("Image to GBA (tiles) failed! Reason: %s\n", ex.what());
-        exit(EXIT_FAILURE);
-    }
-    catch (const std::string& ex)
-    {
-        printf("Image to GBA (tiles) failed! Reason: %s\n", ex.c_str());
-        exit(EXIT_FAILURE);
-    }
-    catch (const char* ex)
-    {
-        printf("Image to GBA (tiles) failed! Reason: %s\n", ex);
-        exit(EXIT_FAILURE);
-    }
-    catch (...)
-    {
-        printf("Image to GBA (tiles) failed!");
-        exit(EXIT_FAILURE);
-    }
+    header.AddTileset(tileset);
+    implementation.AddTileset(tileset);
 }
 

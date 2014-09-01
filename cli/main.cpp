@@ -207,7 +207,7 @@ bool BrandonToolsApp::OnInit()
 {
     if (!wxAppConsole::OnInit())
     {
-        printf("A problem occurred, please report this and give any images the command line that caused this\n");
+        std::cerr << "A problem occurred, please report this and give any images the command line that caused this\n";
         return false;
     }
 
@@ -311,7 +311,7 @@ bool BrandonToolsApp::Validate()
     // Mode check
     if (mode0 + mode3 + mode4 + sprites + map + tiles != 1)
     {
-        printf("[FATAL] Only 1 of -modeXXX, -sprites, -map, and -tiles can be set at a time or none set.\n");
+        std::cerr << "[FATAL] Only 1 of -modeXXX, -sprites, -map, and -tiles can be set at a time or none set.\n";
         return false;
     }
 
@@ -323,19 +323,19 @@ bool BrandonToolsApp::Validate()
     if (map) params.mode = MAP;
     if (bpp != 4 && bpp != 8 && (mode0 || params.mode >= SPECIAL_MODES))
     {
-        printf("[FATAL] Invalid bpp %ld specified.  Can only set bpp to 4 or 8.\n", bpp);
+        std::cerr << "[FATAL] Invalid bpp " << bpp << " specified.  Can only set bpp to 4 or 8.\n";
         return false;
     }
 
     if (map && tileset.IsEmpty())
     {
-        printf("[FATAL] -map export specified however -tileset not given or empty\n");
+        std::cerr << "[FATAL] -map export specified however -tileset not given or empty\n";
         return false;
     }
 
     if (files.size() <= 1)
     {
-        printf("[FATAL] You must specify an output array/filename and a list of image files you want to export.\n");
+        std::cerr << "[FATAL] You must specify an output array/filename and a list of image files you want to export.\n";
         return false;
     }
 
@@ -350,18 +350,18 @@ bool BrandonToolsApp::Validate()
         split(resize.ToStdString(), ',', tokens);
         if (tokens.size() != 2)
         {
-            printf("[FATAL] error parsing -resize only need 2 comma separated values, %zd given\n.", tokens.size());
+            std::cerr << "[FATAL] error parsing -resize only need 2 comma separated values, " << tokens.size() << " given.\n";
             return false;
         }
         params.width = atoi(tokens[0].c_str());
         params.height = atoi(tokens[1].c_str());
         if (params.files.size() > 1)
         {
-            printf("[WARNING] multiple files given, reminder they will ALL be resized.\n");
+            std::cerr << "[WARNING] multiple files given, reminder they will ALL be resized.\n";
         }
         if (params.width <= 0 || params.height <= 0)
         {
-            printf("[FATAL] bad width or height %d,%d.\n", params.width, params.height);
+            std::cerr << "[FATAL] bad width or height " << params.width << "," << params.height << ".\n";
             return false;
         }
     }
@@ -373,7 +373,7 @@ bool BrandonToolsApp::Validate()
         split(transparent.ToStdString(), ',', tokens);
         if (tokens.size() != 3)
         {
-            printf("[FATAL] error parsing -transparent\n.");
+            std::cerr << "[FATAL] error parsing -transparent\n.";
             return false;
         }
         int r = atoi(tokens[0].c_str()) & 0xff;
@@ -385,7 +385,7 @@ bool BrandonToolsApp::Validate()
 
         if (r > 31 || r < 0 || g < 0 || g > 31 || b < 0 || b > 31)
         {
-            printf("[ERROR] -transparent one of r,g,b outside range...\n");
+            std::cerr << "[ERROR] -transparent one of r,g,b outside range [0,31]...\n";
             exit(EXIT_FAILURE);
         }
 
@@ -396,7 +396,7 @@ bool BrandonToolsApp::Validate()
 
     if (params.offset >= 256)
     {
-        printf("[WARNING] -start palette offset set to >= 256.\n");
+        std::cerr << "[WARNING] -start palette offset set to >= 256.\n";
     }
 
     if (!weights.IsEmpty())
@@ -405,7 +405,7 @@ bool BrandonToolsApp::Validate()
         split(weights.ToStdString(), ',', tokens);
         if (tokens.size() != 4)
         {
-            printf("[FATAL] error parsing -weights\n.");
+            std::cerr << "[FATAL] error parsing -weights\n.";
             return false;
         }
         int p = atoi(tokens[0].c_str());
@@ -414,7 +414,7 @@ bool BrandonToolsApp::Validate()
         int error = atoi(tokens[3].c_str());
 
         if (p < 0 || v < 0 || pv < 0 || error < 0 || (p+v+pv+error != 100))
-            printf("[WARNING] -weights total does not sum up to 100 or invalid value given...\n");
+            std::cerr << "[WARNING] -weights total does not sum up to 100 or invalid value given...\n";
 
         params.weights[0] = p;
         params.weights[1] = v;
@@ -424,7 +424,7 @@ bool BrandonToolsApp::Validate()
 
     if (params.palette > 256)
     {
-        printf("[WARNING] trying to make palette size > 256.\n");
+        std::cerr << "[WARNING] trying to make palette size > 256.\n";
     }
 
     if (!tileset.IsEmpty())
@@ -438,11 +438,11 @@ bool BrandonToolsApp::Validate()
     // Info/Warning text for tiles
     if (params.mode == TILES && !resize.IsEmpty())
     {
-        printf("[WARNING] exporting tiles when passing in -resize, your map may export incorrectly if you aren't careful.\n");
+        std::cerr << "[WARNING] exporting tiles when passing in -resize, your map may export incorrectly if you aren't careful.\n";
     }
     if (params.mode == TILES)
     {
-        printf("[INFO] trying to export tiles only.  When using -map ensure you pass as -tileset the images you used for this export in that exact order.\n");
+        std::cerr << "[INFO] trying to export tiles only.  When using -map ensure you pass as -tileset the images you used for this export in that exact order.\n";
         header.SetTilesets(params.files);
         implementation.SetTilesets(params.files);
     }
@@ -468,8 +468,8 @@ bool BrandonToolsApp::DoLoadImages()
     }
     catch( Magick::Exception &error_ )
     {
-        printf("%s\n", error_.what());
-        printf("Export failed check the image(s) you are trying to load into the program");
+        std::cerr << error_.what() << "\n";
+        std::cerr << "Export failed check the image(s) you are trying to load into the program";
         return false;
     }
 
@@ -492,8 +492,8 @@ bool BrandonToolsApp::DoHandleResize()
     {
         for (unsigned int i = 0; i < params.images.size(); i++)
         {
-            if (params.images[i].columns() > 240) printf(WARNING_WIDTH, params.images[i].baseFilename().c_str(), (int)params.images[i].columns());
-            if (params.images[i].rows() > 160) printf(WARNING_HEIGHT, params.images[i].baseFilename().c_str(), (int)params.images[i].rows());
+            if (params.images[i].columns() > 240) fprintf(stderr, WARNING_WIDTH, params.images[i].baseFilename().c_str(), (int)params.images[i].columns());
+            if (params.images[i].rows() > 160) fprintf(stderr, WARNING_HEIGHT, params.images[i].baseFilename().c_str(), (int)params.images[i].rows());
         }
     }
 
@@ -562,7 +562,7 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
 
         output_names.insert(filename);
         if (logging)
-            printf("file: %s\n", filename.c_str());
+            std::cerr << "file: " << filename << "\n";
         params.names.push_back(filename);
     }
 
@@ -604,7 +604,7 @@ bool BrandonToolsApp::DoExportImages()
             DoMapExport(images, tilesets);
             break;
         default:
-            printf("No mode specified image not exported");
+            std::cerr << "No mode specified image not exported";
             return false;
     }
 

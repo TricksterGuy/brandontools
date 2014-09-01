@@ -318,7 +318,7 @@ int PaletteBank::Search(const Color& a) const
 
     if (bestd != 0)
     {
-        printf("[WARNING] Color remap: Color given to palette bank not an exact match.\n");
+        fprintf(stderr, "[WARNING] Color remap: Color given to palette bank not an exact match.\n");
     }
 
     return index;
@@ -428,7 +428,7 @@ void Tile<unsigned char>::UsePalette(const PaletteBank& bank)
 {
     if (bpp == 8)
     {
-        printf("Not implemented");
+        fprintf(stderr, "Not implemented");
         return;
     }
 
@@ -707,9 +707,9 @@ void Tileset::Init4bpp(const std::vector<Image16Bpp>& images)
     // Delicious infos
     int cbbs = tiles.size() * tile_size / SIZE_CBB_BYTES;
     int sbbs = (int) ceil(tiles.size() * tile_size % SIZE_CBB_BYTES / ((double)SIZE_SBB_BYTES));
-    printf("[INFO] Tiles found %zu.\n", tiles.size());
-    printf("[INFO] Tiles uses %d charblocks and %d screenblocks.\n", cbbs, sbbs);
-    printf("[INFO] Total utilization %.2f/4 charblocks or %d/32 screenblocks, %d/65536 bytes.\n",
+    fprintf(stderr, "[INFO] Tiles found %zu.\n", tiles.size());
+    fprintf(stderr, "[INFO] Tiles uses %d charblocks and %d screenblocks.\n", cbbs, sbbs);
+    fprintf(stderr, "[INFO] Total utilization %.2f/4 charblocks or %d/32 screenblocks, %d/65536 bytes.\n",
            memory_b / ((double)SIZE_CBB_BYTES), (int) ceil(memory_b / ((double)SIZE_SBB_BYTES)), memory_b);
 }
 
@@ -758,7 +758,7 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
             }
             else if (offsets.size() > 1 && !disjoint_error)
             {
-                printf("[WARNING] Tiles found in tileset image %s are not disjoint, offset calculations may be off\n", image.name.c_str());
+                fprintf(stderr, "[WARNING] Tiles found in tileset image %s are not disjoint, offset calculations may be off\n", image.name.c_str());
                 disjoint_error = true;
             }
         }
@@ -777,9 +777,9 @@ void Tileset::Init8bpp(const std::vector<Image16Bpp>& images16)
     // Delicious infos
     int cbbs = tiles.size() * tile_size / SIZE_CBB_BYTES;
     int sbbs = (int) ceil(tiles.size() * tile_size % SIZE_CBB_BYTES / ((double)SIZE_SBB_BYTES));
-    printf("[INFO] Tiles found %zu.\n", tiles.size());
-    printf("[INFO] Tiles uses %d charblocks and %d screenblocks.\n", cbbs, sbbs);
-    printf("[INFO] Total utilization %.2f/4 charblocks or %d/32 screenblocks, %d/65536 bytes.\n",
+    fprintf(stderr, "[INFO] Tiles found %zu.\n", tiles.size());
+    fprintf(stderr, "[INFO] Tiles uses %d charblocks and %d screenblocks.\n", cbbs, sbbs);
+    fprintf(stderr, "[INFO] Total utilization %.2f/4 charblocks or %d/32 screenblocks, %d/65536 bytes.\n",
            memory_b / ((double)SIZE_CBB_BYTES), (int) ceil(memory_b / ((double)SIZE_SBB_BYTES)), memory_b);
 }
 
@@ -869,8 +869,8 @@ void Map::Init4bpp(const Image16Bpp& image)
 
         if (!tileset->Match(imageTile, tile_id, pal_id))
         {
-            printf("[WARNING] Image: %s No match for tile starting at (%d %d) px, using empty tile instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
-            printf("[WARNING] Image: %s No match for palette for tile starting at (%d %d) px, using palette 0 instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
+            fprintf(stderr, "[WARNING] Image: %s No match for tile starting at (%d %d) px, using empty tile instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
+            fprintf(stderr, "[WARNING] Image: %s No match for palette for tile starting at (%d %d) px, using palette 0 instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
         }
         data[i] = pal_id << 12 | tile_id;
 
@@ -891,7 +891,7 @@ void Map::Init8bpp(const Image16Bpp& image)
 
         if (!tileset->Match(tile, tile_id, pal_id))
         {
-            printf("[WARNING] Image: %s No match for tile starting at (%d %d) px, using empty tile instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
+            fprintf(stderr, "[WARNING] Image: %s No match for tile starting at (%d %d) px, using empty tile instead.\n", image.name.c_str(), tilex * 8, tiley * 8);
         }
 
         data[i] = tile_id;
@@ -1172,10 +1172,7 @@ Block Block::Split(const BlockSize& to_this_size)
     else if (size.height == to_this_size.height)
         return HSplit();
     else
-    {
-        printf("%d %d => %d %d\n", size.width, size.height, to_this_size.width, to_this_size.height);
         throw "Error Block::Split";
-    }
 
     return Block();
 }
@@ -1326,7 +1323,6 @@ bool SpriteSheet::AssignBlockIfAvailable(BlockSize& size, Sprite& sprite, unsign
         Block allocd = freeBlocks[size].front();
         freeBlocks[size].pop_front();
         allocd.sprite_id = i;
-        //printf("%d %d %d\n", i, allocd.x, allocd.y);
         sprite.offset = (allocd.y * width + allocd.x) * (params.bpp == 4 ? 1 : 2);
         placedBlocks.push_back(allocd);
         return true;

@@ -324,7 +324,7 @@ Tile<T>::Tile(const Tile<T>& tile) : id(tile.id), data(tile.data), bpp(tile.bpp)
 template <class T>
 Tile<T>::Tile(std::shared_ptr<ImageTile> imageTile, int bpp)
 {
-    printf("Not implemented");
+    fprintf(stderr, "Not implemented");
 }
 
 template <class T>
@@ -378,13 +378,13 @@ void Tile<T>::Set(const T* image, int pitch, int tilex, int tiley, int border, i
 template <class T>
 void Tile<T>::Set(const Image16Bpp& image, const Palette& global_palette, int tilex, int tiley)
 {
-    printf("Not implemented");
+    fprintf(stderr, "Not implemented");
 }
 
 template <class T>
 void Tile<T>::UsePalette(const PaletteBank& bank)
 {
-    printf("Not implemented");
+    fprintf(stderr, "Not implemented");
 }
 
 template <class T>

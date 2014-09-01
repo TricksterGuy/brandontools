@@ -13,38 +13,15 @@
 
 void DoMode3(const std::vector<Image16Bpp>& images)
 {
-    try
-    {
-        // Set mode
-        header.SetMode(3);
-        implementation.SetMode(3);
+    // Set mode
+    header.SetMode(3);
+    implementation.SetMode(3);
 
-        // Add images to header and implemenation files
-        for (const auto& image : images)
-        {
-            std::shared_ptr<Image16Bpp> image_ptr(new Image16Bpp(image));
-            header.AddImage(image_ptr);
-            implementation.AddImage(image_ptr);
-        }
-    }
-    catch (const std::exception& ex)
+    // Add images to header and implementation files
+    for (const auto& image : images)
     {
-        printf("Image to GBA (Mode3) failed! Reason: %s\n", ex.what());
-        exit(EXIT_FAILURE);
-    }
-    catch (const std::string& ex)
-    {
-        printf("Image to GBA (Mode3) failed! Reason: %s\n", ex.c_str());
-        exit(EXIT_FAILURE);
-    }
-    catch (const char* ex)
-    {
-        printf("Image to GBA (Mode3) failed! Reason: %s\n", ex);
-        exit(EXIT_FAILURE);
-    }
-    catch (...)
-    {
-        printf("Image to GBA (Mode3) failed!");
-        exit(EXIT_FAILURE);
+        std::shared_ptr<Image16Bpp> image_ptr(new Image16Bpp(image));
+        header.AddImage(image_ptr);
+        implementation.AddImage(image_ptr);
     }
 }

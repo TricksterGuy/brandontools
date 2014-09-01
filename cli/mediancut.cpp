@@ -204,8 +204,6 @@ bool MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std:
     queue0.push(box);
 
 
-    //while (palette.size() < desiredColors)
-    //{
 
     CutBoxes(queue0, removed, weights[0] * desiredColors / 100);
     SwapQueues(queue0, queue1);
@@ -221,7 +219,6 @@ bool MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std:
         queue3.pop();
         Color color = current.GetAverageColor();
         palette.push_back(color);
-        //printf("%f %f %f\n", color.x, color.y, color.z);
     }
 
     while (removed.size() > 0)
@@ -231,7 +228,6 @@ bool MedianCut(const std::vector<Color>& image, unsigned int desiredColors, std:
 
         Color color = current.GetAverageColor();
         palette.push_back(color);
-        //printf("%f %f %f\n", color.x, color.y, color.z);
     }
 
     return true;
@@ -243,23 +239,9 @@ void CutBoxes(std::priority_queue<Box, std::vector<Box>, BoxCompare>& queue,
 {
     while (queue.size() + removed.size() < desiredColors && queue.size() != 0)
     {
-        //printf("%d\n", queue.size());
         Box current = queue.top();
         Histogram histogram = current.GetData();
-        //const std::map<Color, size_t>& mapData = histogram.GetData();
         queue.pop();
-
-        /*printf("Splitting box size: %d population: %d\n", current.Size(), current.Population());
-        printf("Box information\n");
-        Color c = current.GetAverageColor();
-        printf("Box's average color (%f %f %f)\n", c.x, c.y, c.z);
-
-        std::vector<Color>::const_iterator i = histogram.GetColors().begin();
-        for (; i != histogram.GetColors().end(); ++i)
-        {
-            Color color = *i;
-            printf("(%f %f %f) => %d\n", color.x, color.y, color.z, mapData.find(color)->second);
-        }*/
 
         Box other = current.Split();
 

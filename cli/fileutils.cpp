@@ -15,7 +15,7 @@ void InitFiles(std::ofstream& file_c, std::ofstream& file_h, const std::string& 
 
     if (!file_c.good() || !file_h.good())
     {
-        printf("Could not open files for writing\n");
+        fprintf(stderr, "Could not open files for writing\n");
         exit(EXIT_FAILURE);
     }
 }
