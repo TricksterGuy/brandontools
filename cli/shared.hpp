@@ -46,6 +46,8 @@ struct ExportParams
     // Sprite stuff
     bool for_bitmap;
     bool export_2d;
+
+    bool to_stdout;
 };
 
 void DoMode0(const std::vector<Image16Bpp>& images);

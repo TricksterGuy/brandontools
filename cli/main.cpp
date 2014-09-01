@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
+#include <iostream>
 #include <set>
 #include <sstream>
 #include <string>
@@ -12,6 +14,7 @@
 
 #include "cpercep.hpp"
 #include "headerfile.hpp"
+#include "fileutils.hpp"
 #include "implementationfile.hpp"
 #include "reductionhelper.hpp"
 #include "shared.hpp"
@@ -129,6 +132,9 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         "dithering effect is by default it is set to 80.",
         wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL},
 
+    // Silly Options
+    {wxCMD_LINE_SWITCH, "E", "E", "Outputs all data to stdout", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+
     // Forbidden options DO NOT USE under any circumstances.
     {wxCMD_LINE_SWITCH, "hide", "hide", "DO NOT USE", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "fullpalette", "fullpalette", "DO NOT USE", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
@@ -181,6 +187,8 @@ bool force = false;
 // Sprite options
 bool export_2d = false;
 bool for_bitmap = false;
+// Other
+bool to_stdout = false;
 
 bool hide = false;
 bool full_palette = false;
@@ -248,6 +256,7 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     export_2d = parser.Found(_("export_2d"));
     for_bitmap = parser.Found(_("for_bitmap"));
 
+    to_stdout = parser.Found(_("E"));
     hide = parser.Found(_("hide"));
     full_palette = parser.Found(_("fullpalette"));
 
@@ -297,6 +306,7 @@ bool BrandonToolsApp::Validate()
     params.force = force;
     params.export_2d = export_2d;
     params.for_bitmap = for_bitmap;
+    params.to_stdout = to_stdout;
 
     // Mode check
     if (mode0 + mode3 + mode4 + sprites + map + tiles != 1)
@@ -598,6 +608,29 @@ bool BrandonToolsApp::DoExportImages()
             return false;
     }
 
+
+    if (params.to_stdout)
+    {
+        std::cout << "Header: " << params.name << ".h\n";
+        header.Write(std::cout);
+        std::cout << "\n";
+        std::cout << "Implementation: " << params.name << ".c\n";
+        implementation.Write(std::cout);
+        std::cout << "\n";
+    }
+    else
+    {
+        // Write the files
+        std::ofstream file_c, file_h;
+        InitFiles(file_c, file_h, params.name);
+
+        header.Write(file_h);
+        implementation.Write(file_c);
+
+        file_h.close();
+        file_c.close();
+    }
+
     return true;
 }
 
@@ -623,8 +656,8 @@ int BrandonToolsApp::OnRun()
     if (!DoExportImages())
         return EXIT_FAILURE;
 
-    printf("File exported successfully as %s.c and %s.h\n", params.name.c_str(), params.name.c_str());
-    printf("The image (unless otherwise specified via command line) should be located in the current working directory (use ls and pwd)\n");
+    std::cerr << "File exported successfully as " << params.name << ".c and " << params.name << ".h\n";
+    std::cerr << "The image (unless otherwise specified via command line) should be located in the current working directory (use ls and pwd)\n";
 
     return EXIT_SUCCESS;
 }

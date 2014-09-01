@@ -31,16 +31,6 @@ void DoSpriteExport(const std::vector<Image16Bpp>& images)
 
         header.AddScene(scene);
         implementation.AddScene(scene);
-
-        // Write the files
-        std::ofstream file_c, file_h;
-        InitFiles(file_c, file_h, params.name);
-
-        header.Write(file_h);
-        implementation.Write(file_c);
-
-        file_h.close();
-        file_c.close();
     }
     catch (const std::exception& ex)
     {

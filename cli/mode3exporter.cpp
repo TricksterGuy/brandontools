@@ -26,16 +26,6 @@ void DoMode3(const std::vector<Image16Bpp>& images)
             header.AddImage(image_ptr);
             implementation.AddImage(image_ptr);
         }
-
-        // Write the files
-        std::ofstream file_c, file_h;
-        InitFiles(file_c, file_h, params.name);
-
-        header.Write(file_h);
-        implementation.Write(file_c);
-
-        file_h.close();
-        file_c.close();
     }
     catch (const std::exception& ex)
     {
