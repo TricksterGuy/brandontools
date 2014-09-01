@@ -637,27 +637,50 @@ bool BrandonToolsApp::DoExportImages()
 // Do cool things here
 int BrandonToolsApp::OnRun()
 {
-    // Seed random number for quote generator the seed changes everyday
-    // Well not exactly it will reset when GMT reaches 12am
-    // Oh well close enough
-    time_t timeh = time(NULL);
-    srand(timeh / 60 / 60 / 24);
+    try
+    {
+        // Seed random number for quote generator the seed changes everyday
+        // Well not exactly it will reset when GMT reaches 12am
+        // Oh well close enough
+        time_t timeh = time(NULL);
+        srand(timeh / 60 / 60 / 24);
 
-    cpercep_init();
+        cpercep_init();
 
-    if (!Validate())
-        return EXIT_FAILURE;
-    if (!DoLoadImages())
-        return EXIT_FAILURE;
-    if (!DoHandleResize())
-        return EXIT_FAILURE;
-    if (!DoCheckAndLabelImages())
-        return EXIT_FAILURE;
-    if (!DoExportImages())
-        return EXIT_FAILURE;
+        if (!Validate())
+            return EXIT_FAILURE;
+        if (!DoLoadImages())
+            return EXIT_FAILURE;
+        if (!DoHandleResize())
+            return EXIT_FAILURE;
+        if (!DoCheckAndLabelImages())
+            return EXIT_FAILURE;
+        if (!DoExportImages())
+            return EXIT_FAILURE;
 
-    std::cerr << "File exported successfully as " << params.name << ".c and " << params.name << ".h\n";
-    std::cerr << "The image (unless otherwise specified via command line) should be located in the current working directory (use ls and pwd)\n";
+        std::cerr << "File exported successfully as " << params.name << ".c and " << params.name << ".h\n";
+        std::cerr << "The image (unless otherwise specified via command line) should be located in the current working directory (use ls and pwd)\n";
+    }
+    catch (const std::exception& ex)
+    {
+        fprintf(stderr, "Image to GBA failed! Reason: %s\n", ex.what());
+        return EXIT_FAILURE;
+    }
+    catch (const std::string& ex)
+    {
+        fprintf(stderr, "Image to GBA failed! Reason: %s\n", ex.c_str());
+        return EXIT_FAILURE;
+    }
+    catch (const char* ex)
+    {
+        fprintf(stderr, "Image to GBA failed! Reason: %s\n", ex);
+        return EXIT_FAILURE;
+    }
+    catch (...)
+    {
+        fprintf(stderr, "Image to GBA failed!");
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }
