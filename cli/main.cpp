@@ -9,8 +9,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <wx/cmdline.h>
 #include <wx/app.h>
+#include <wx/cmdline.h>
+#include <wx/filename.h>
 
 #include "cpercep.hpp"
 #include "headerfile.hpp"
@@ -63,6 +64,8 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
     // General helpful options
     {wxCMD_LINE_OPTION, "resize", "resize", "(Usage -resize=240,160) Resizes ALL images (except images passed in through --tileset) given to w,h",
         wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_OPTION, "names", "names", "(Usage -names=name1,name2) Renames output array names to names given. If this is used each image given must be renamed. "
+        "If not given then the file names of the images will be used to generate the name.", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "transparent", "transparent",
         "(Usage -transparent=r,g,b) Makes the color r,g,b transparent note that r,g,b corresponds "
         "to a pixel in your input image. The range of r,g,b is [0,255]. This does not magically make "
@@ -169,6 +172,8 @@ bool tiles = false;
 bool map = false;
 long bpp = 8;
 // Helpful options
+wxString names;
+std::vector<std::string> overrideNames;
 wxString resize = "";
 wxString transparent = "";
 bool animated = false;
@@ -236,6 +241,7 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     map = parser.Found(_("map"));
     parser.Found(_("bpp"), &bpp);
 
+    parser.Found(_("names"), &names);
     parser.Found(_("resize"), &resize);
     parser.Found(_("transparent"), &transparent);
     animated = parser.Found(_("animated"));
@@ -339,10 +345,22 @@ bool BrandonToolsApp::Validate()
         return false;
     }
 
-    params.name = files[0];
+    params.filename = files[0];
+
     for (unsigned int i = 1; i < files.size(); i++)
         // Validate file's names here.
         params.files.push_back(files[i].ToStdString());
+
+    if (!names.IsEmpty())
+    {
+        split(names.ToStdString(), ',', overrideNames);
+        if (overrideNames.size() != files.size() - 1)
+        {
+            std::cerr << "[FATAL] incorrect number of overrideNames given " << overrideNames.size() << " != " << (files.size() - 1) <<
+                ", this must be equal to the number of images passed in";
+            return false;
+        }
+    }
 
     if (!resize.IsEmpty())
     {
@@ -447,6 +465,12 @@ bool BrandonToolsApp::Validate()
         implementation.SetTilesets(params.files);
     }
 
+    if (hide)
+    {
+        header.SetInvocation("");
+        implementation.SetInvocation("");
+    }
+
     return true;
 }
 
@@ -520,10 +544,18 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
     std::set<std::string> output_names;
     for (unsigned int i = 0; i < params.images.size(); i++)
     {
-        std::string filename = params.images[i].baseFilename();
-        Chop(filename);
-        int last = filename.rfind('.');
-        filename = Sanitize(filename.substr(0, last));
+        std::string filename;
+
+        if (!overrideNames.empty())
+        {
+            filename = Sanitize(overrideNames[i]);
+        }
+        else
+        {
+            wxFileName file(params.images[i].baseFilename());
+            filename = Sanitize(file.GetName().ToStdString());
+        }
+
         used_times[filename] += 1;
         if (used_times[filename] > 1)
         {
@@ -608,13 +640,12 @@ bool BrandonToolsApp::DoExportImages()
             return false;
     }
 
-
     if (params.to_stdout)
     {
-        std::cout << "Header: " << params.name << ".h\n";
+        std::cout << "Header: " << params.filename << ".h\n";
         header.Write(std::cout);
         std::cout << "\n";
-        std::cout << "Implementation: " << params.name << ".c\n";
+        std::cout << "Implementation: " << params.filename << ".c\n";
         implementation.Write(std::cout);
         std::cout << "\n";
     }
@@ -622,7 +653,7 @@ bool BrandonToolsApp::DoExportImages()
     {
         // Write the files
         std::ofstream file_c, file_h;
-        InitFiles(file_c, file_h, params.name);
+        InitFiles(file_c, file_h, params.filename);
 
         header.Write(file_h);
         implementation.Write(file_c);
@@ -658,7 +689,7 @@ int BrandonToolsApp::OnRun()
         if (!DoExportImages())
             return EXIT_FAILURE;
 
-        std::cerr << "File exported successfully as " << params.name << ".c and " << params.name << ".h\n";
+        std::cerr << "File exported successfully as " << params.filename << ".c and " << params.filename << ".h\n";
         std::cerr << "The image (unless otherwise specified via command line) should be located in the current working directory (use ls and pwd)\n";
     }
     catch (const std::exception& ex)

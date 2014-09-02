@@ -19,7 +19,7 @@ void DoTilesetExport(const std::vector<Image16Bpp>& images)
 
     // Do the work of mode 0 conversion.
     // Form the tileset and then add it to header and implementation
-    std::shared_ptr<Tileset> tileset(new Tileset(images, params.name, params.bpp));
+    std::shared_ptr<Tileset> tileset(new Tileset(images, params.filename, params.bpp));
 
     header.SetPalette(tileset->palette);
     implementation.SetPalette(tileset->palette);

@@ -19,7 +19,7 @@ void DoSpriteExport(const std::vector<Image16Bpp>& images)
 
     // Do the work of sprite conversion.
     // Form the sprite scene and then add it to header and implementation
-    std::shared_ptr<SpriteScene> scene(new SpriteScene(images, params.name, params.export_2d, params.bpp));
+    std::shared_ptr<SpriteScene> scene(new SpriteScene(images, params.filename, params.export_2d, params.bpp));
 
     // Build the sprite scene and place all sprites. (If applicable)
     scene->Build();

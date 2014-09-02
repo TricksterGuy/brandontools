@@ -90,11 +90,11 @@ void ImplementationFile::Write(std::ostream& file)
 
     if (params.animated)
     {
-        WriteShortPtrArray(file, params.name, "_frames", names, 1);
+        WriteShortPtrArray(file, params.filename, "_frames", names, 1);
         WriteNewLine(file);
         for (const std::string& extra : animated_extras)
         {
-            std::string extra_name = params.name + extra;
+            std::string extra_name = params.filename + extra;
             WriteShortPtrArray(file, extra_name, "_frames", names, extra, 1);
         }
     }

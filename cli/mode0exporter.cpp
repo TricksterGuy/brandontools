@@ -56,7 +56,7 @@ void DoMode0(const std::vector<Image16Bpp>& images)
     }
     else
     {
-        std::shared_ptr<MapScene> scene(new MapScene(images, params.name, params.bpp));
+        std::shared_ptr<MapScene> scene(new MapScene(images, params.filename, params.bpp));
         header.AddScene(scene);
         implementation.AddScene(scene);
         header.SetPalette(scene->tileset->palette);
