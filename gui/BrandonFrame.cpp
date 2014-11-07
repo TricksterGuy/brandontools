@@ -473,12 +473,12 @@ wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int
         pmode = _("-sprites");
     phide = hide ? "-hide -fullpalette" : "";
     pgimp = useGIMP ? "-usegimp" : "";
-    presize = wxString::Format("-resize=%d,%d", width, height);
+    presize = (width == -1 || height == -1) ? _("") : wxString::Format("-resize=%d,%d", width, height);
     pstart = wxString::Format("-start=%d", startIndex);
     ptransparent = isTransparent ? wxString::Format("-transparent=%d,%d,%d", transparent.Red(), transparent.Green(), transparent.Blue()) : "";
     pweights = wxString::Format("-weights=%d,%d,%d,%d", weights[0], weights[1], weights[2], weights[3]);
     pdither = wxString::Format("-dither=%d", dither);
-    pditherLevel = wxString::Format("-dither-level=%d", ditherLevel);
+    pditherLevel = wxString::Format("-dither_level=%d", ditherLevel);
 
     for (unsigned int i = 0; i < files.size(); i++)
         pfilenames += "\"" + files[i] + "\" ";

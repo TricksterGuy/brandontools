@@ -556,6 +556,12 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
             filename = Sanitize(file.GetName().ToStdString());
         }
 
+        // If filenames first character is not alphabetic i.e. a number fix it.
+        if (!isalpha(filename[0]))
+        {
+            filename = "image_" + filename;
+        }
+
         used_times[filename] += 1;
         if (used_times[filename] > 1)
         {
