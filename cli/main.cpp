@@ -346,6 +346,9 @@ bool BrandonToolsApp::Validate()
     }
 
     params.filename = files[0];
+    params.sanitized_filename = wxFileName(params.filename).GetFullName();
+    Chop(params.sanitized_filename);
+    params.sanitized_filename = Sanitize(params.sanitized_filename);
 
     for (unsigned int i = 1; i < files.size(); i++)
         // Validate file's names here.

@@ -26,7 +26,7 @@ class BrandonFrame : public BrandonFrameGUI
 		void DoUpdateImages(void);
 		void DoUpdateSettings(void);
 		void DoCompile(const wxString& file);
-		void DoUpdateExportedImages(const wxString& sofile, const wxString& image, const wxString& palette, int width, int height);
+		void DoUpdateExportedImages(const wxString& sofile, int id, const wxString& palette, int width, int height);
 
 		wxArrayString sourceFiles;
 		wxString exportFilename;

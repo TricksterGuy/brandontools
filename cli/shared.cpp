@@ -21,6 +21,9 @@ void split(const std::string& s, char delimiter, std::vector<std::string>& token
 
 void Chop(std::string& filename)
 {
+    if (filename[0] == '/')
+        filename[0] = '\\';
+
     int index = filename.rfind('\\');
     if ((unsigned int)index == std::string::npos)
     {

@@ -15,6 +15,7 @@ struct ExportParams
     // General Export stuff
     int mode;
     std::string filename; // Filename of the exported file + array name if not batch.
+    std::string sanitized_filename; // Filename of the exported file + array name if not batch.
     std::vector<std::string> files;
     std::vector<std::string> names; // In batch names of the arrays for the images. if -names is given then it becomes those.
     std::vector<Magick::Image> images;

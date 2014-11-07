@@ -244,14 +244,13 @@ void BrandonFrame::DoUpdateImages(void)
 
     DoExport(tempfile.GetFullPath());
 
-    wxString name = sourceFiles.size() == 1 ? tempfile.GetFullName() : srcFile.GetName();
     wxFileName tempsofile = tempfile;
     tempsofile.SetExt("so");
 
     // Compile the file.
     DoCompile(tempfile.GetFullPath());
     afterWindow->SetVirtualSize(width, height);
-    DoUpdateExportedImages(tempsofile.GetFullPath(), name, tempfile.GetName() + "_palette", width, height);
+    DoUpdateExportedImages(tempsofile.GetFullPath(), sourceFileIndex, tempfile.GetName() + "_palette", width, height);
 }
 
 void BrandonFrame::DoExport(const wxString& exportFilename, bool hide)
@@ -279,9 +278,15 @@ void BrandonFrame::DoCompile(const wxString& file)
   *
   * @todo: document this function
   */
-void BrandonFrame::DoUpdateExportedImages(const wxString& sofile, const wxString& image, const wxString& palette, int width, int height)
+void BrandonFrame::DoUpdateExportedImages(const wxString& sofile, int id, const wxString& palette, int width, int height)
 {
     void* odata = dlopen(sofile.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+    if (odata == NULL)
+    {
+         wxMessageBox("Wasn't able to open the generated files to display what it would look like on the gba", _("Failure"));
+         return;
+    }
+    wxString image = wxString::Format("image%d", id);
 
     if (mode == 3)
     {
@@ -461,7 +466,7 @@ void Export(wxArrayString& files, wxString filename, int mode, int width, int he
 wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
             bool isTransparent, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGIMP, bool hide)
 {
-    wxString pprogram, pmode, phide, pgimp, presize, pstart, ptransparent, pweights, pdither, pditherLevel, pfilenames;
+    wxString pprogram, pmode, phide, pgimp, presize, pstart, ptransparent, pweights, pdither, pditherLevel, pfilenames, pnames;
 #ifdef __WXMSW__
     pprogram = _("BrandonTools.exe");
 #else
@@ -479,12 +484,17 @@ wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int
     pweights = wxString::Format("-weights=%d,%d,%d,%d", weights[0], weights[1], weights[2], weights[3]);
     pdither = wxString::Format("-dither=%d", dither);
     pditherLevel = wxString::Format("-dither_level=%d", ditherLevel);
+    pnames = "-names=";
+
+    for (unsigned int i = 0; i < files.size() - 1; i++)
+        pnames += wxString::Format("image%d,", (int)i);
+    pnames += wxString::Format("image%d", (int)files.size() - 1);
 
     for (unsigned int i = 0; i < files.size(); i++)
         pfilenames += "\"" + files[i] + "\" ";
 
     // prog mode resize start transparent weights dither ditherlevel name filenames
-    return wxString::Format("%s %s %s %s %s %s %s %s %s %s %s %s",
-                                        pprogram, pmode, pgimp, phide, presize, pstart, ptransparent, pweights, pdither, pditherLevel, filename, pfilenames);
+    return wxString::Format("%s %s %s %s %s %s %s %s %s %s %s %s %s",
+                                        pprogram, pmode, pgimp, phide, presize, pstart, ptransparent, pweights, pdither, pditherLevel, pnames, filename, pfilenames);
 
 }
