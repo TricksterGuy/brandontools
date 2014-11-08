@@ -1,0 +1,14 @@
+Its better if you clone my repo instead of downloading the source in case something is found broken and I fix it.
+
+To install brandontools
+-----------------------
+1) Install dependancies. You need ImageMagick or magick++, and wxwidgets 3.0 (Which should have been installed via complx). so get that terminal ready
+sudo apt-get install libmagick++-dev libmagickcore-dev libmagickwand-dev libwxgtk-media3.0-dev libwxgtk3.0-dev
+the same directory where this file you are reading is located, execute the following.
+make && sudo make install
+if there are any errors please report them to me directly.
+2) Type brandontools in a terminal if it says 1.0.0.0 or whatever the version number is now plus an error message about not specifying array name + input files then you are set up.
+3) Type brandontools-gui in a terminal to test if the gui version of the program is working
+4) Optionally to test if the program is really working run ./tests.sh It should output a bunch a .c/.h files to the current directory. If any command errors out let me know.
+5) Read the included readme file on how to use the program.
+
