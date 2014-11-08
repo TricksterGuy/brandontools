@@ -62,4 +62,4 @@ cli/brandontools -mode3 double3 http://media.idownloadblog.com/wp-content/upload
 
 # Double export 4
 echo -e "\n\nDouble image export 4\n"
-cli/brandontools -mode3 double4 test_images/simple.png  test_images/simple3.png test_images/simple.png test_images/simple.png test_images/simple2.png test_images/simple2.png test_images/simple3.png test_images/simple.png 
+cli/brandontools -mode4 double4 test_images/simple.png  test_images/simple3.png test_images/simple.png test_images/simple.png test_images/simple2.png test_images/simple2.png test_images/simple3.png test_images/simple.png 

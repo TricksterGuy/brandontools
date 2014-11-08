@@ -484,11 +484,17 @@ wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int
     pweights = wxString::Format("-weights=%d,%d,%d,%d", weights[0], weights[1], weights[2], weights[3]);
     pdither = wxString::Format("-dither=%d", dither);
     pditherLevel = wxString::Format("-dither_level=%d", ditherLevel);
-    pnames = "-names=";
+    pnames = "";
 
-    for (unsigned int i = 0; i < files.size() - 1; i++)
-        pnames += wxString::Format("image%d,", (int)i);
-    pnames += wxString::Format("image%d", (int)files.size() - 1);
+    // Hide is used when doing a temp export.
+    if (hide)
+    {
+        pnames = "-names=";
+
+        for (unsigned int i = 0; i < files.size() - 1; i++)
+            pnames += wxString::Format("image%d,", (int)i);
+        pnames += wxString::Format("image%d", (int)files.size() - 1);
+    }
 
     for (unsigned int i = 0; i < files.size(); i++)
         pfilenames += "\"" + files[i] + "\" ";
