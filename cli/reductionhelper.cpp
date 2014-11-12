@@ -189,6 +189,13 @@ void Image8Bpp::Set(const Image16Bpp& image, std::shared_ptr<Palette> global_pal
     pixels.resize(width * height);
     palette = global_palette;
 
+    if (width & 1)
+    {
+        std::stringstream oss;
+        oss << "[ERROR] Image" << name << " width is not a multiple of 2. Please fix\n";
+        throw oss.str();
+    }
+
     RiemersmaDither(image, *this, params.transparent_color, params.dither, params.dither_level);
     if (params.offset > 0)
     {
