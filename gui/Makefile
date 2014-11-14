@@ -9,7 +9,7 @@ CC := g++
 CXX := $(CC)
 RM := rm
 INSTALL := install
-FILES := BrandonApp.o BrandonFrame.o BrandonFrameGUI.o
+FILES := BrandonApp.o BrandonFrame.o BrandonFrameGUI.o BrandonToolsEditorGUI.o
 
 all : $(OUTPUT)
 
