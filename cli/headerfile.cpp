@@ -18,18 +18,18 @@ void HeaderFile::Write(std::ostream& file)
     std::vector<std::string> names;
     std::vector<std::string> animated_extras;
 
-    WriteHeaderGuard(file, params.filename, types[type]);
+    WriteHeaderGuard(file, params.symbol_base_name, types[type]);
     bool ok_newline = false;
     if (params.transparent_given)
     {
         char buffer[7];
         sprintf(buffer, "0x%04x", transparent_color);
-        WriteDefine(file, params.filename, "_TRANSPARENT", (mode == 3) ? buffer : "0x00");
+        WriteDefine(file, params.symbol_base_name, "_TRANSPARENT", (mode == 3) ? buffer : "0x00");
         ok_newline = true;
     }
     if (params.offset)
     {
-        WriteDefine(file, params.filename, "_PALETTE_OFFSET ", params.offset);
+        WriteDefine(file, params.symbol_base_name, "_PALETTE_OFFSET ", params.offset);
         ok_newline = true;
     }
     if (ok_newline) WriteNewLine(file);
@@ -110,12 +110,12 @@ void HeaderFile::Write(std::ostream& file)
 
     if (params.animated && names.size() > 1)
     {
-        WriteExternShortPtrArray(file, params.filename, "_frames", names.size());
-        WriteDefine(file, params.filename, "_ANIMATION_FRAMES", names.size());
+        WriteExternShortPtrArray(file, params.symbol_base_name, "_frames", names.size());
+        WriteDefine(file, params.symbol_base_name, "_ANIMATION_FRAMES", names.size());
         WriteNewLine(file);
         for (const std::string& extra : animated_extras)
         {
-            std::string extra_name = params.filename + extra;
+            std::string extra_name = params.symbol_base_name + extra;
             WriteExternShortPtrArray(file, extra_name, "_frames", names.size());
             WriteDefine(file, extra_name, "_ANIMATION_FRAMES", names.size());
         }

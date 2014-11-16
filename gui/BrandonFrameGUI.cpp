@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Sep  8 2010)
+// C++ code generated with wxFormBuilder (version Nov 12 2014)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -25,9 +25,9 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	bSizer11b = new wxBoxSizer( wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer1;
-	fgSizer1 = new wxFlexGridSizer( 9, 2, 0, 0 );
+	fgSizer1 = new wxFlexGridSizer( 12, 2, 0, 0 );
 	fgSizer1->AddGrowableCol( 1 );
-	fgSizer1->AddGrowableRow( 6 );
+	fgSizer1->AddGrowableRow( 9 );
 	fgSizer1->SetFlexibleDirection( wxBOTH );
 	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
@@ -46,16 +46,15 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	m_button4 = new wxButton( settingsPanel, wxID_ANY, _("Browse"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer15b->Add( m_button4, 0, wxALL, 4 );
 	
+	
 	fgSizer1->Add( bSizer15b, 1, wxEXPAND, 5 );
 	
-	m_staticText1 = new wxStaticText( settingsPanel, wxID_ANY, _("Filename:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1 = new wxStaticText( settingsPanel, wxID_ANY, _("Symbol Name (Filename):"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText1->Wrap( -1 );
 	fgSizer1->Add( m_staticText1, 0, wxALL, 8 );
 	
-	filename = new wxFilePickerCtrl( settingsPanel, wxID_ANY, wxEmptyString, _("Select a file"), wxT("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_SAVE|wxFLP_USE_TEXTCTRL );
-	filename->SetToolTip( _("The name of the generated file without extension") );
-	
-	fgSizer1->Add( filename, 1, wxALL|wxEXPAND, 5 );
+	filename = new wxTextCtrl( settingsPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer1->Add( filename, 0, wxALL|wxEXPAND, 8 );
 	
 	m_staticText7 = new wxStaticText( settingsPanel, wxID_ANY, _("GBA Mode:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText7->Wrap( -1 );
@@ -67,13 +66,14 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	bSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
 	
-	wxString modeChoices[] = { _("Mode3"), _("Mode4") };
+	wxString modeChoices[] = { _("Mode3"), _("Mode4"), _("Mode0"), _("Sprites") };
 	int modeNChoices = sizeof( modeChoices ) / sizeof( wxString );
 	mode = new wxChoice( settingsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, modeNChoices, modeChoices, 0 );
 	mode->SetSelection( 0 );
 	mode->SetToolTip( _("Which GBA Mode you want.") );
 	
 	bSizer8->Add( mode, 0, wxALL, 5 );
+	
 	
 	fgSizer1->Add( bSizer8, 1, wxEXPAND, 5 );
 	
@@ -106,6 +106,7 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	bSizer5->Add( height, 0, wxALL, 5 );
 	
+	
 	fgSizer1->Add( bSizer5, 1, wxALIGN_RIGHT|wxEXPAND, 5 );
 	
 	m_staticText5 = new wxStaticText( settingsPanel, wxID_ANY, _("Start Index:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -124,7 +125,59 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	bSizer6->Add( startIndex, 0, wxALL, 5 );
 	
+	
 	fgSizer1->Add( bSizer6, 1, wxEXPAND, 5 );
+	
+	m_staticText171 = new wxStaticText( settingsPanel, wxID_ANY, _("Palette Size:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText171->Wrap( -1 );
+	fgSizer1->Add( m_staticText171, 0, wxALL, 8 );
+	
+	wxBoxSizer* bSizer18;
+	bSizer18 = new wxBoxSizer( wxVERTICAL );
+	
+	paletteSize = new wxSpinCtrl( settingsPanel, wxID_ANY, wxT("255"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 255, 255 );
+	paletteSize->Enable( false );
+	
+	bSizer18->Add( paletteSize, 0, wxALL|wxALIGN_RIGHT, 5 );
+	
+	
+	fgSizer1->Add( bSizer18, 1, wxEXPAND, 5 );
+	
+	m_staticText1711 = new wxStaticText( settingsPanel, wxID_ANY, _("Bpp:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1711->Wrap( -1 );
+	fgSizer1->Add( m_staticText1711, 0, wxALL, 8 );
+	
+	wxBoxSizer* bSizer181;
+	bSizer181 = new wxBoxSizer( wxVERTICAL );
+	
+	wxString bppChoices[] = { _("4 Bits"), _("8 Bits") };
+	int bppNChoices = sizeof( bppChoices ) / sizeof( wxString );
+	bpp = new wxChoice( settingsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, bppNChoices, bppChoices, 0 );
+	bpp->SetSelection( 1 );
+	bpp->Enable( false );
+	
+	bSizer181->Add( bpp, 0, wxALL|wxALIGN_RIGHT, 5 );
+	
+	
+	fgSizer1->Add( bSizer181, 1, wxEXPAND, 5 );
+	
+	m_staticText21 = new wxStaticText( settingsPanel, wxID_ANY, _("Sprite Mode:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText21->Wrap( -1 );
+	fgSizer1->Add( m_staticText21, 0, wxALL, 8 );
+	
+	wxBoxSizer* bSizer1811;
+	bSizer1811 = new wxBoxSizer( wxVERTICAL );
+	
+	wxString spriteModeChoices[] = { _("1D"), _("2D") };
+	int spriteModeNChoices = sizeof( spriteModeChoices ) / sizeof( wxString );
+	spriteMode = new wxChoice( settingsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, spriteModeNChoices, spriteModeChoices, 0 );
+	spriteMode->SetSelection( 1 );
+	spriteMode->Enable( false );
+	
+	bSizer1811->Add( spriteMode, 0, wxALL|wxALIGN_RIGHT, 5 );
+	
+	
+	fgSizer1->Add( bSizer1811, 1, wxEXPAND, 5 );
 	
 	m_staticText151 = new wxStaticText( settingsPanel, wxID_ANY, _("Colorkey Image?"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText151->Wrap( -1 );
@@ -137,6 +190,7 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	colorkey->SetToolTip( _("Enable Transparent Color") );
 	
 	bSizer15->Add( colorkey, 0, wxALIGN_RIGHT|wxTOP|wxBOTTOM|wxRIGHT, 6 );
+	
 	
 	fgSizer1->Add( bSizer15, 1, wxEXPAND, 5 );
 	
@@ -154,6 +208,7 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	transparent->Enable( false );
 	
 	bSizer99->Add( transparent, 0, wxALL, 4 );
+	
 	
 	fgSizer1->Add( bSizer99, 1, wxEXPAND, 5 );
 	
@@ -181,13 +236,18 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	exportImage = new wxButton( settingsPanel, wxID_ANY, _("Export!"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer171->Add( exportImage, 0, wxALIGN_RIGHT|wxALL, 5 );
 	
+	
 	bSizer160->Add( bSizer171, 0, 0, 5 );
+	
 	
 	fgSizer1->Add( bSizer160, 1, wxEXPAND|wxALIGN_RIGHT, 5 );
 	
+	
 	bSizer11b->Add( fgSizer1, 1, wxEXPAND, 5 );
 	
+	
 	bSizer2->Add( bSizer11b, 1, wxEXPAND, 5 );
+	
 	
 	settingsPanel->SetSizer( bSizer2 );
 	settingsPanel->Layout();
@@ -275,17 +335,6 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	fgSizer2->Add( ditherLevel, 0, wxALL, 5 );
 	
-	m_staticText17 = new wxStaticText( advancedPanel, wxID_ANY, _("Use GIMP?"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText17->Wrap( -1 );
-	fgSizer2->Add( m_staticText17, 0, wxALL, 5 );
-	
-	
-	fgSizer2->Add( 0, 0, 1, wxEXPAND, 5 );
-	
-	useGimp = new wxCheckBox( advancedPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
-	useGimp->SetToolTip( _("Use Gimp to convert the image into indexed mode (may get a better result)?") );
-	
-	fgSizer2->Add( useGimp, 0, wxALL|wxALIGN_RIGHT, 8 );
 	
 	advancedPanel->SetSizer( fgSizer2 );
 	advancedPanel->Layout();
@@ -308,6 +357,7 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	sbSizer1->Add( beforeWindow, 1, wxEXPAND | wxALL, 0 );
 	
+	
 	bSizer10->Add( sbSizer1, 0, 0, 0 );
 	
 	
@@ -323,7 +373,9 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	sbSizer2->Add( afterWindow, 1, wxEXPAND | wxALL, 0 );
 	
+	
 	bSizer10->Add( sbSizer2, 0, 0, 0 );
+	
 	
 	bSizer3->Add( bSizer10, 0, 0, 0 );
 	
@@ -340,6 +392,7 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	bSizer14->Add( nextImage, 0, wxALL, 5 );
 	
+	
 	bSizer3->Add( bSizer14, 0, wxEXPAND, 0 );
 	
 	wxStaticBoxSizer* sbSizer3;
@@ -352,7 +405,9 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	sbSizer3->Add( currentPalette, 0, wxALL, 0 );
 	
+	
 	bSizer3->Add( sbSizer3, 0, 0, 0 );
+	
 	
 	imagesPanel->SetSizer( bSizer3 );
 	imagesPanel->Layout();
@@ -369,6 +424,7 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	cCode = new wxStyledTextCtrl(cCodePanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
 	bSizer16->Add( cCode, 1, wxALL|wxEXPAND, 0 );
 	
+	
 	cCodePanel->SetSizer( bSizer16 );
 	cCodePanel->Layout();
 	bSizer16->Fit( cCodePanel );
@@ -380,6 +436,7 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	hCode = new wxStyledTextCtrl(hCodePanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
 	bSizer17->Add( hCode, 1, wxALL|wxEXPAND, 0 );
 	
+	
 	hCodePanel->SetSizer( bSizer17 );
 	hCodePanel->Layout();
 	bSizer17->Fit( hCodePanel );
@@ -387,12 +444,14 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	
 	codeSizer->Add( codeBook, 1, wxEXPAND | wxALL, 0 );
 	
+	
 	codePanel->SetSizer( codeSizer );
 	codePanel->Layout();
 	codeSizer->Fit( codePanel );
 	notebook->AddPage( codePanel, _("Code"), false );
 	
 	bSizer1->Add( notebook, 1, wxEXPAND | wxALL, 0 );
+	
 	
 	this->SetSizer( bSizer1 );
 	this->Layout();
@@ -403,7 +462,6 @@ BrandonFrameGUI::BrandonFrameGUI( wxWindow* parent, wxWindowID id, const wxStrin
 	notebook->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( BrandonFrameGUI::OnChangePage ), NULL, this );
 	sourceImages->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( BrandonFrameGUI::OnSelectSource ), NULL, this );
 	m_button4->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( BrandonFrameGUI::OnSourceFiles ), NULL, this );
-	filename->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( BrandonFrameGUI::OnFilename ), NULL, this );
 	mode->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( BrandonFrameGUI::OnModeChange ), NULL, this );
 	colorkey->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( BrandonFrameGUI::OnColorKey ), NULL, this );
 	command->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( BrandonFrameGUI::OnExportCommand ), NULL, this );
@@ -419,7 +477,6 @@ BrandonFrameGUI::~BrandonFrameGUI()
 	notebook->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( BrandonFrameGUI::OnChangePage ), NULL, this );
 	sourceImages->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( BrandonFrameGUI::OnSelectSource ), NULL, this );
 	m_button4->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( BrandonFrameGUI::OnSourceFiles ), NULL, this );
-	filename->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( BrandonFrameGUI::OnFilename ), NULL, this );
 	mode->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( BrandonFrameGUI::OnModeChange ), NULL, this );
 	colorkey->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( BrandonFrameGUI::OnColorKey ), NULL, this );
 	command->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( BrandonFrameGUI::OnExportCommand ), NULL, this );

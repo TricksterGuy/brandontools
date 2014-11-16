@@ -1,14 +1,17 @@
 #include "BrandonFrame.hpp"
 #include <dlfcn.h>
 #include <wx/msgdlg.h>
+#include <wx/filedlg.h>
 
 
 static void SetUpStyledText(wxStyledTextCtrl* text);
 static void UpdateStyledText(wxStyledTextCtrl* text, const wxString& file);
 static void Export(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool colorkey, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGimp, bool hide = false);
-static wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool isTransparent, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGIMP, bool hide);
+                   int paletteSize, int bpp, bool export_2d, bool isTransparent, wxColor transparent, bool dither,
+                   int ditherLevel, int weights[4], bool hide = false);
+wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
+                          int paletteSize, int bpp, bool export_2d, bool isTransparent, wxColor transparent, bool dither,
+                          int ditherLevel, int weights[4], bool hide = false);
 
 
 wxString tempdir;
@@ -34,7 +37,6 @@ BrandonFrame::BrandonFrame() : BrandonFrameGUI(0L)
     error->Enable(false);
     dither->Enable(false);
     ditherLevel->Enable(false);
-    useGimp->Enable(false);
 }
 
 /** @brief ~BrandonFrame
@@ -91,15 +93,6 @@ void BrandonFrame::OnSelectSource(wxCommandEvent& event)
     sourceFileIndex = event.GetSelection();
 }
 
-/** @brief OnFilename
-  *
-  * @todo: document this function
-  */
-void BrandonFrame::OnFilename(wxFileDirPickerEvent& event)
-{
-    exportFilename = event.GetPath();
-}
-
 /** @brief OnModeChange
   *
   * @todo: document this function
@@ -116,20 +109,22 @@ void BrandonFrame::OnModeChange(wxCommandEvent& event)
             mode = 4;
             break;
         case 2:
-            mode = -1;
-            break;
-        case 3:
             mode = 0;
             break;
+        case 3:
+            mode = 7;
+            break;
     }
-    startIndex->Enable(mode == 4);
-    volume->Enable(mode == 4);
-    population->Enable(mode == 4);
-    popvolume->Enable(mode == 4);
-    error->Enable(mode == 4);
-    dither->Enable(mode == 4);
-    ditherLevel->Enable(mode == 4);
-    useGimp->Enable(mode == 4);
+    startIndex->Enable(mode != 3);
+    paletteSize->Enable(mode != 3);
+    spriteMode->Enable(mode == 7);
+    bpp->Enable(mode == 0 || mode == 7);
+    volume->Enable(mode != 3);
+    population->Enable(mode != 3);
+    popvolume->Enable(mode != 3);
+    error->Enable(mode != 3);
+    dither->Enable(mode != 3);
+    ditherLevel->Enable(mode != 3);
 }
 
 /** @brief OnDither
@@ -178,8 +173,15 @@ void BrandonFrame::OnPreviousImage(wxCommandEvent& event)
   */
 void BrandonFrame::OnExport(wxCommandEvent& event)
 {
-    DoExport(exportFilename, false);
+    if (filename->IsEmpty())
+    {
+        wxMessageBox(_("Need to specify filename before exporting!"), _("ERROR"));
+        return;
+    }
+    DoExport(filename->GetValue(), false);
 }
+
+
 
 /** @brief OnExportCommand
   *
@@ -187,13 +189,19 @@ void BrandonFrame::OnExport(wxCommandEvent& event)
   */
 void BrandonFrame::OnExportCommand(wxCommandEvent& event)
 {
+    if (filename->IsEmpty())
+    {
+        wxMessageBox(_("Need to specify filename before exporting!"), _("ERROR"));
+        return;
+    }
     int weights[4];
     weights[0] = volume->GetValue();
     weights[1] = population->GetValue();
     weights[2] = popvolume->GetValue();
     weights[3] = error->GetValue();
-    wxString command = GetExportCommand(sourceFiles, exportFilename, mode, width->GetValue(), height->GetValue(), startIndex->GetValue(),
-           colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue(), weights, useGimp->IsChecked(), false);
+    wxString command = GetExportCommand(sourceFiles, filename->GetValue(), mode, width->GetValue(), height->GetValue(), startIndex->GetValue(),
+                                        paletteSize->GetValue(), bpp->GetSelection() == 0 ? 4 : 8, spriteMode->GetSelection(),
+                                        colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue(), weights, false);
     wxMessageBox(command, _("Export Command"));
 }
 
@@ -261,7 +269,8 @@ void BrandonFrame::DoExport(const wxString& exportFilename, bool hide)
     weights[2] = popvolume->GetValue();
     weights[3] = error->GetValue();
     Export(sourceFiles, exportFilename, mode, width->GetValue(), height->GetValue(), startIndex->GetValue(),
-           colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue(), weights, useGimp->IsChecked(), hide);
+           paletteSize->GetValue(), bpp->GetSelection() == 0 ? 4 : 8, spriteMode->GetSelection(),
+           colorkey->IsChecked(), transparent->GetColour(), dither->IsChecked(), ditherLevel->GetValue(), weights, hide);
 }
 
 /** @brief DoCompile
@@ -437,25 +446,16 @@ void UpdateStyledText(wxStyledTextCtrl* text, const wxString& file)
     text->LoadFile(file);
     text->SetReadOnly(true);
     text->SetSelection(0, 0);
-
-    /*void* filed = dlopen("C:\\Users\\Brandon\\Desktop\\lol.so", RTLD_LAZY | RTLD_GLOBAL);
-    printf("LOL: %p\n", filed);
-    char* lolz = (char*) dlsym(filed, "name");
-    printf("LOL %s\n", lolz);
-    int (*lol)(int);
-    lol = (int(*)(int)) dlsym(filed, "lol");
-    printf("LOL %d %d %d %d %d %d\n", lol(0), lol(1), lol(2), lol(3), lol(4), lol(5));
-    dlclose(filed);*/
 }
 
 void Export(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool isTransparent, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGIMP, bool hide)
+                          int paletteSize, int bpp, bool export_2d, bool isTransparent, wxColor transparent, bool dither,
+                          int ditherLevel, int weights[4], bool hide)
 {
-    wxString execute = GetExportCommand(files, filename, mode, width, height, startIndex, isTransparent,
-                                        transparent, dither, ditherLevel, weights, useGIMP, hide);
+    wxString execute = GetExportCommand(files, filename, mode, width, height, startIndex, paletteSize, bpp, export_2d, isTransparent,
+                                        transparent, dither, ditherLevel, weights, hide);
 
     if (execute == lastExport) return;
-
 
     lastExport = execute;
     wxArrayString stdout;
@@ -464,43 +464,47 @@ void Export(wxArrayString& files, wxString filename, int mode, int width, int he
 }
 
 wxString GetExportCommand(wxArrayString& files, wxString filename, int mode, int width, int height, int startIndex,
-            bool isTransparent, wxColor transparent, bool dither, int ditherLevel, int weights[4], bool useGIMP, bool hide)
+                          int paletteSize, int bpp, bool export_2d, bool isTransparent, wxColor transparent, bool dither,
+                          int ditherLevel, int weights[4], bool hide)
 {
-    wxString pprogram, pmode, phide, pgimp, presize, pstart, ptransparent, pweights, pdither, pditherLevel, pfilenames, pnames;
+    wxString command;
+
 #ifdef __WXMSW__
-    pprogram = _("BrandonTools.exe");
+    command += _("brandontools.exe");
 #else
-    pprogram = _("brandontools");
+    command += _("brandontools");
 #endif
-    if (mode == 3 || mode == 4 || mode == 0)
-        pmode = wxString::Format("-mode%d", mode);
-    else
-        pmode = _("-sprites");
-    phide = hide ? "-hide -fullpalette" : "";
-    pgimp = useGIMP ? "-usegimp" : "";
-    presize = (width == -1 || height == -1) ? _("") : wxString::Format("-resize=%d,%d", width, height);
-    pstart = wxString::Format("-start=%d", startIndex);
-    ptransparent = isTransparent ? wxString::Format("-transparent=%d,%d,%d", transparent.Red(), transparent.Green(), transparent.Blue()) : "";
-    pweights = wxString::Format("-weights=%d,%d,%d,%d", weights[0], weights[1], weights[2], weights[3]);
-    pdither = wxString::Format("-dither=%d", dither);
-    pditherLevel = wxString::Format("-dither_level=%d", ditherLevel);
-    pnames = "";
+
+    // Mode
+    command += (mode == 3 || mode == 4 || mode == 0) ? wxString::Format(" -mode%d", mode) : _(" -sprites");
+
+    // Special
+    command += hide ? _(" -hide -fullpalette") : _("");
+    command += (width == -1 || height == -1) ? _("") : wxString::Format(" -resize=%d,%d", width, height);
+    command += (mode == 3 || startIndex == 0) ? _("") : wxString::Format(" -start=%d", startIndex);
+    command += (mode == 3 || paletteSize == 255) ? _("") : wxString::Format(" -palette=%d", paletteSize);
+    command += isTransparent ? wxString::Format(" -transparent=%d,%d,%d", transparent.Red(), transparent.Green(), transparent.Blue()) : _("");
+    command += (mode == 3 || (weights[0] == 25 && weights[1] == 25 && weights[2] == 25 && weights[3] == 25)) ? _("") :
+                wxString::Format(" -weights=%d,%d,%d,%d", weights[0], weights[1], weights[2], weights[3]);
+    command += (mode == 3 || dither) ? _("") : wxString::Format(" -dither=%d", dither);
+    command += (mode == 3 || ditherLevel == 80) ? _("") : wxString::Format(" -dither_level=%d", ditherLevel);
+    command += (mode == 0 || mode == 7) ? wxString::Format(" -bpp=%d", bpp) : _("");
+    command += (mode == 7 && export_2d) ? wxString::Format(" -export_2d") : _("");
 
     // Hide is used when doing a temp export.
     if (hide)
     {
-        pnames = "-names=";
-
+        command += " -names=";
         for (unsigned int i = 0; i < files.size() - 1; i++)
-            pnames += wxString::Format("image%d,", (int)i);
-        pnames += wxString::Format("image%d", (int)files.size() - 1);
+            command += wxString::Format("image%d,", (int)i);
+        command += wxString::Format("image%d", (int)files.size() - 1);
     }
 
-    for (unsigned int i = 0; i < files.size(); i++)
-        pfilenames += "\"" + files[i] + "\" ";
+    command += wxString::Format(" %s ", filename);
 
-    // prog mode resize start transparent weights dither ditherlevel name filenames
-    return wxString::Format("%s %s %s %s %s %s %s %s %s %s %s %s %s",
-                                        pprogram, pmode, pgimp, phide, presize, pstart, ptransparent, pweights, pdither, pditherLevel, pnames, filename, pfilenames);
+    for (unsigned int i = 0; i < files.size(); i++)
+        command += "\"" + files[i] + "\" ";
+
+    return command;
 
 }

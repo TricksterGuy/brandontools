@@ -38,7 +38,7 @@ void DoMode4(const std::vector<Image16Bpp>& images)
     }
     else
     {
-        std::shared_ptr<Image8BppScene> scene(new Image8BppScene(images, params.sanitized_filename));
+        std::shared_ptr<Image8BppScene> scene(new Image8BppScene(images, params.symbol_base_name));
         header.SetPalette(scene->palette);
         implementation.SetPalette(scene->palette);
         header.AddScene(scene);

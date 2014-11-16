@@ -13,7 +13,6 @@ class BrandonFrame : public BrandonFrameGUI
 
 		void OnSourceFiles(wxCommandEvent& event);
 		void OnSelectSource(wxCommandEvent& event);
-		void OnFilename(wxFileDirPickerEvent& event);
 		void OnModeChange(wxCommandEvent& event);
 		void OnExport(wxCommandEvent& event);
 		void DoExport(const wxString& exportFilename, bool hide = true);
@@ -29,7 +28,6 @@ class BrandonFrame : public BrandonFrameGUI
 		void DoUpdateExportedImages(const wxString& sofile, int id, const wxString& palette, int width, int height);
 
 		wxArrayString sourceFiles;
-		wxString exportFilename;
 		int mode;
 		int sourceFileIndex;
 		wxStaticBitmap* currentImageBefore;

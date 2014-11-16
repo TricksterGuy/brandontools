@@ -66,6 +66,8 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "names", "names", "(Usage -names=name1,name2) Renames output array names to names given. If this is used each image given must be renamed. "
         "If not given then the file names of the images will be used to generate the name.", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_OPTION, "output_dir", "output_dir", "(Usage -names=name1,name2) Renames output array names to names given. If this is used each image given must be renamed. "
+        "If not given then the file names of the images will be used to generate the name.", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_OPTION, "transparent", "transparent",
         "(Usage -transparent=r,g,b) Makes the color r,g,b transparent note that r,g,b corresponds "
         "to a pixel in your input image. The range of r,g,b is [0,255]. This does not magically make "
@@ -174,6 +176,7 @@ long bpp = 8;
 // Helpful options
 wxString names;
 std::vector<std::string> overrideNames;
+wxString output_dir;
 wxString resize = "";
 wxString transparent = "";
 bool animated = false;
@@ -242,6 +245,7 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     parser.Found(_("bpp"), &bpp);
 
     parser.Found(_("names"), &names);
+    parser.Found(_("output_dir"), &output_dir);
     parser.Found(_("resize"), &resize);
     parser.Found(_("transparent"), &transparent);
     animated = parser.Found(_("animated"));
@@ -345,10 +349,9 @@ bool BrandonToolsApp::Validate()
         return false;
     }
 
-    params.filename = files[0];
-    params.sanitized_filename = wxFileName(params.filename).GetFullName();
-    Chop(params.sanitized_filename);
-    params.sanitized_filename = Sanitize(params.sanitized_filename);
+    std::string export_file = Chop(files[0].ToStdString());
+    params.filename = output_dir.IsEmpty() ? files[0].ToStdString() : output_dir + export_file;
+    params.symbol_base_name = Sanitize(export_file);
 
     for (unsigned int i = 1; i < files.size(); i++)
         // Validate file's names here.
@@ -491,7 +494,7 @@ bool BrandonToolsApp::DoLoadImages()
             readImages(&params.tileset, tilesets[i]);
         }
         for (unsigned int i = 0; i < params.files.size(); i++)
-            Chop(params.files[i]);
+            params.files[i] = Chop(params.files[i]);
     }
     catch( Magick::Exception &error_ )
     {
@@ -551,18 +554,11 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
 
         if (!overrideNames.empty())
         {
-            filename = Sanitize(overrideNames[i]);
+            filename = Format(overrideNames[i]);
         }
         else
         {
-            wxFileName file(params.images[i].baseFilename());
-            filename = Sanitize(file.GetName().ToStdString());
-        }
-
-        // If filenames first character is not alphabetic i.e. a number fix it.
-        if (!isalpha(filename[0]))
-        {
-            filename = "image_" + filename;
+            filename = Format(params.images[i].baseFilename());
         }
 
         used_times[filename] += 1;
@@ -651,10 +647,10 @@ bool BrandonToolsApp::DoExportImages()
 
     if (params.to_stdout)
     {
-        std::cout << "Header: " << params.filename << ".h\n";
+        std::cout << "Header: " << params.symbol_base_name << ".h\n";
         header.Write(std::cout);
         std::cout << "\n";
-        std::cout << "Implementation: " << params.filename << ".c\n";
+        std::cout << "Implementation: " << params.symbol_base_name << ".c\n";
         implementation.Write(std::cout);
         std::cout << "\n";
     }

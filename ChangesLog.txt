@@ -1,7 +1,7 @@
 1 January 2014
    released version 1.0.0 of BrandonTools
      Change log:
-        -New: Mode 0 Support (4bpp and 8bpp)
+    -New: Mode 0 Support (4bpp and 8bpp)
 	-New: Tiles Only Export
 	-New: Map Only Export (given a tileset)
 	-New: Sprites Export (4bpp and 8bpp, 2d and 1d, bitmap mode)

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <sstream>
+#include <wx/filename.h>
 
 std::string ToUpper(const std::string& str)
 {
@@ -19,19 +20,9 @@ void split(const std::string& s, char delimiter, std::vector<std::string>& token
         tokens.push_back(item);
 }
 
-void Chop(std::string& filename)
+std::string Chop(const std::string& filename)
 {
-    if (filename[0] == '/')
-        filename[0] = '\\';
-
-    int index = filename.rfind('\\');
-    if ((unsigned int)index == std::string::npos)
-    {
-        index = filename.rfind('/');
-        if ((unsigned int)index == std::string::npos) index = -1;
-    }
-
-    filename = filename.substr(index+1);
+    return wxFileName(filename).GetName().ToStdString();
 }
 
 std::string Sanitize(const std::string& filename)
@@ -41,7 +32,7 @@ std::string Sanitize(const std::string& filename)
     {
         if ((filename[i] >= 'A' && filename[i] <= 'Z') ||
             (filename[i] >= 'a' && filename[i] <= 'z') ||
-            (filename[i] >= '0' && filename[i] <= '9') ||
+            (filename[i] >= '0' && filename[i] <= '9' && i != 0) ||
             filename[i] == '_')
             out.put(filename[i]);
     }
@@ -50,9 +41,7 @@ std::string Sanitize(const std::string& filename)
 
 std::string Format(const std::string& file)
 {
-    std::string filename = file;
-    Chop(filename);
-    return Sanitize(filename);
+    return Sanitize(Chop(file));
 }
 
 unsigned int log2(unsigned int x)

@@ -14,8 +14,8 @@ struct ExportParams
 {
     // General Export stuff
     int mode;
-    std::string filename; // Filename of the exported file + array name if not batch.
-    std::string sanitized_filename; // Filename of the exported file + array name if not batch.
+    std::string filename; // Full path to exported file.
+    std::string symbol_base_name; // base name of generated symbols <sbn>_palette, <sbn>_map etc.
     std::vector<std::string> files;
     std::vector<std::string> names; // In batch names of the arrays for the images. if -names is given then it becomes those.
     std::vector<Magick::Image> images;
@@ -70,7 +70,7 @@ Image height given %d\n"
 
 std::string ToUpper(const std::string& str);
 void split(const std::string& s, char delimiter, std::vector<std::string>& tokens);
-void Chop(std::string& filename);
+std::string Chop(const std::string& filename);
 std::string Sanitize(const std::string& filename);
 std::string Format(const std::string& filename);
 unsigned int log2(unsigned int x);

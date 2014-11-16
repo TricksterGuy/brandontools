@@ -1,15 +1,16 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Sep  8 2010)
+// C++ code generated with wxFormBuilder (version Nov 12 2014)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef __BrandonFrameGUI__
-#define __BrandonFrameGUI__
+#ifndef __BRANDONFRAMEGUI_H__
+#define __BRANDONFRAMEGUI_H__
 
+#include <wx/artprov.h>
+#include <wx/xrc/xmlres.h>
 #include <wx/intl.h>
-
 #include <wx/string.h>
 #include <wx/stattext.h>
 #include <wx/gdicmn.h>
@@ -19,7 +20,7 @@
 #include <wx/choice.h>
 #include <wx/button.h>
 #include <wx/sizer.h>
-#include <wx/filepicker.h>
+#include <wx/textctrl.h>
 #include <wx/spinctrl.h>
 #include <wx/checkbox.h>
 #include <wx/clrpicker.h>
@@ -50,55 +51,43 @@ class BrandonFrameGUI : public wxFrame
 		wxChoice* sourceImages;
 		wxButton* m_button4;
 		wxStaticText* m_staticText1;
-		wxFilePickerCtrl* filename;
+		wxTextCtrl* filename;
 		wxStaticText* m_staticText7;
-		
 		wxChoice* mode;
 		wxStaticText* m_staticText2;
-		
 		wxStaticText* m_staticText3;
 		wxSpinCtrl* width;
 		wxStaticText* m_staticText4;
 		wxSpinCtrl* height;
 		wxStaticText* m_staticText5;
-		
 		wxSpinCtrl* startIndex;
+		wxStaticText* m_staticText171;
+		wxSpinCtrl* paletteSize;
+		wxStaticText* m_staticText1711;
+		wxChoice* bpp;
+		wxStaticText* m_staticText21;
+		wxChoice* spriteMode;
 		wxStaticText* m_staticText151;
 		wxCheckBox* colorkey;
 		wxStaticText* m_staticText141;
-		
 		wxColourPickerCtrl* transparent;
-		
-		
-		
-		
 		wxButton* command;
 		wxButton* exportImage;
 		wxPanel* advancedPanel;
 		wxStaticText* m_staticText11;
-		
 		wxSpinCtrl* volume;
 		wxStaticText* m_staticText12;
-		
 		wxSpinCtrl* population;
 		wxStaticText* m_staticText13;
-		
 		wxSpinCtrl* popvolume;
 		wxStaticText* m_staticText14;
-		
 		wxSpinCtrl* error;
 		wxStaticText* m_staticText15;
-		
 		wxCheckBox* dither;
 		wxStaticText* m_staticText16;
-		
 		wxSpinCtrl* ditherLevel;
-		wxStaticText* m_staticText17;
-		
-		wxCheckBox* useGimp;
 		wxPanel* imagesPanel;
 		wxScrolledWindow* beforeWindow;
-		
 		wxScrolledWindow* afterWindow;
 		wxButton* previousImage;
 		wxButton* nextImage;
@@ -115,7 +104,6 @@ class BrandonFrameGUI : public wxFrame
 		virtual void OnChangePage( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void OnSelectSource( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnSourceFiles( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnFilename( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnModeChange( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnColorKey( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnExportCommand( wxCommandEvent& event ) { event.Skip(); }
@@ -128,8 +116,9 @@ class BrandonFrameGUI : public wxFrame
 	public:
 		
 		BrandonFrameGUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("BrandonTools"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 624,528 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		
 		~BrandonFrameGUI();
 	
 };
 
-#endif //__BrandonFrameGUI__
+#endif //__BRANDONFRAMEGUI_H__
