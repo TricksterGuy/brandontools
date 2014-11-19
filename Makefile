@@ -1,8 +1,8 @@
 # File intended only to be ran with GNU make. Use any other make program at your own risk!
 PREFIX := /usr/local
 export PREFIX
-MASTER_CPP_FLAGS := -O3 -s
-export MASTER_CPP_FLAGS
+#MASTER_CPP_FLAGS := #-O3 -s
+#export MASTER_CPP_FLAGS
 INSTALL := install
 
 all : brandontools-cli brandontools-gui
@@ -26,6 +26,3 @@ install :
 uninstall :
 	$(MAKE) -C cli uninstall -f Makefile
 	$(MAKE) -C gui uninstall -f Makefile
-
-install-script :
-	cp makeindexed.scm ~/.gimp-2.6/scripts

@@ -29,11 +29,13 @@ class Image16Bpp
 {
     public:
         Image16Bpp(Magick::Image image, const std::string& _name);
+        Image16Bpp(unsigned int _width, unsigned int _height) : width(_width), height(_height), name(""), pixels(width * height, 0) {}
         void GetColors(std::vector<Color>& colors) const;
         void GetColors(std::vector<Color>::iterator& color_ptr) const;
         unsigned int Size() const {return width * height;};
         void WriteData(std::ostream& file) const;
         void WriteExport(std::ostream& file) const;
+        Image16Bpp SubImage(unsigned int x, unsigned int y, unsigned int width, unsigned int height) const;
         unsigned int width;
         unsigned int height;
         std::string name;
@@ -269,7 +271,7 @@ class Block
 class SpriteSheet
 {
     public:
-        SpriteSheet(const std::vector<Sprite>& sprites, const std::string& name, int bpp);
+        SpriteSheet(const std::vector<Sprite>& sprites, const std::string& name, int bpp, bool spriteSheetGiven);
         void Compile();
         void WriteData(std::ostream& file) const;
         void WriteExport(std::ostream& file) const;
@@ -280,6 +282,7 @@ class SpriteSheet
         unsigned int width, height;
         std::string name;
         int bpp;
+        bool spriteSheetGiven;
     private:
         void PlaceSprites();
         bool AssignBlockIfAvailable(BlockSize& size, Sprite& sprite, unsigned int i);
@@ -290,6 +293,7 @@ class SpriteSheet
 class SpriteScene
 {
     public:
+        SpriteScene(const Image16Bpp& spriteSheet, const std::string& name, bool is2d, int bpp);
         SpriteScene(const std::vector<Image16Bpp>& images, const std::string& name, bool is2d, int bpp);
         SpriteScene(const std::vector<Image16Bpp>& images, const std::string& name, bool is2d, std::shared_ptr<Palette> tileset);
         SpriteScene(const std::vector<Image16Bpp>& images, const std::string& name, bool is2d, const std::vector<PaletteBank>& paletteBanks);
@@ -306,9 +310,12 @@ class SpriteScene
         // Used if is2d is true
         std::shared_ptr<SpriteSheet> spriteSheet;
         bool is2d;
+        // Special for use spritesheet mode
+        bool spriteSheetGiven;
     private:
         void Init4bpp(const std::vector<Image16Bpp>& images);
         void Init8bpp(const std::vector<Image16Bpp>& images);
+        void InitSpriteSheet(const Image16Bpp& image);
 };
 
 template <class T>

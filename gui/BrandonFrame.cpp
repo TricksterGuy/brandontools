@@ -310,12 +310,25 @@ void BrandonFrame::DoUpdateExportedImages(const wxString& sofile, int id, const 
         wxImage processed(width, height, rgbdata, false);
         currentImageAfter->SetBitmap(wxBitmap(processed));
         currentPalette->SetBitmap(wxNullBitmap);
+        dlclose(odata);
+        return;
     }
-    else if (mode == 4)
+
+    unsigned short* palette_data = (unsigned short*) dlsym(odata, palette.c_str());
+    wxImage paletteImage(16, 16);
+    for (int i = 0; i < 256; i++)
+    {
+        unsigned short c1 = palette_data[i];
+        int x = i % 16;
+        int y = i / 16;
+        paletteImage.SetRGB(x, y, (c1 & 0x1F) * 255 / 31, ((c1 >> 5) & 0x1F) * 255 / 31, ((c1 >> 10) & 0x1F) * 255 / 31);
+    }
+    paletteImage.Rescale(128, 128);
+    currentPalette->SetBitmap(wxBitmap(paletteImage));
+
+    if (mode == 4)
     {
         unsigned short* data = (unsigned short*) dlsym(odata, image.c_str());
-        unsigned short* palette_data = (unsigned short*) dlsym(odata, palette.c_str());
-
         unsigned char* rgbdata = (unsigned char*) malloc(sizeof(char) * 3 * width * height);
         for (int i = 0; i < width * height; i += 2)
         {
@@ -332,21 +345,13 @@ void BrandonFrame::DoUpdateExportedImages(const wxString& sofile, int id, const 
             rgbdata[3 * i + 5] = ((c2 >> 10) & 0x1F) * 255 / 31;
         }
 
-        wxImage paletteImage(16, 16);
-        for (int i = 0; i < 256; i++)
-        {
-            unsigned short c1 = palette_data[i];
-            int x = i % 16;
-            int y = i / 16;
-            paletteImage.SetRGB(x, y, (c1 & 0x1F) * 255 / 31, ((c1 >> 5) & 0x1F) * 255 / 31, ((c1 >> 10) & 0x1F) * 255 / 31);
-        }
-        paletteImage.Rescale(128, 128);
-
         wxImage processed(width, height, rgbdata, false);
         currentImageAfter->SetBitmap(wxBitmap(processed));
         afterWindow->SetVirtualSize(width, height);
-
-        currentPalette->SetBitmap(wxBitmap(paletteImage));
+    }
+    else
+    {
+        wxMessageBox(_("Viewing of tile/sprite data not supported at this time, come back after Thanksgiving!"), _("Error"));
     }
 
 
