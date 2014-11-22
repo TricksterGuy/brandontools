@@ -14,6 +14,14 @@ void ImplementationFile::Write(std::ostream& file)
     std::vector<std::string> names;
     std::vector<std::string> animated_extras;
 
+    for (const auto& image_ptr : images32)
+    {
+        const Image32Bpp& image = *image_ptr;
+        image.WriteData(file);
+
+        names.push_back(image.name);
+    }
+
     for (const auto& image_ptr : images16)
     {
         const Image16Bpp& image = *image_ptr;

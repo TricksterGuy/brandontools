@@ -84,6 +84,11 @@ void ExportFile::AddImageInfo(const std::string& filename, int scene, int width,
     imageInfos.push_back(buffer);
 }
 
+void ExportFile::AddImage(std::shared_ptr<Image32Bpp> image)
+{
+    images32.push_back(image);
+}
+
 void ExportFile::AddImage(std::shared_ptr<Image16Bpp> image)
 {
     images16.push_back(image);

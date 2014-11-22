@@ -9,7 +9,8 @@ CC := g++ -g -std=c++0x -Wall
 CXX := $(CC)
 RM := rm
 INSTALL := install
-FILES := color.o \
+FILES := 3dsexporter.o \
+	color.o \
 	cpercep.o \
 	dither.o \
 	exportfile.o \

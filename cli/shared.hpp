@@ -14,6 +14,7 @@ struct ExportParams
 {
     // General Export stuff
     int mode;
+    int device;
     std::string filename; // Full path to exported file.
     std::string symbol_base_name; // base name of generated symbols <sbn>_palette, <sbn>_map etc.
     std::vector<std::string> files;
@@ -57,6 +58,7 @@ void DoMode4(const std::vector<Image16Bpp>& images);
 void DoTilesetExport(const std::vector<Image16Bpp>& images);
 void DoMapExport(const std::vector<Image16Bpp>& images, const std::vector<Image16Bpp>& tilesets);
 void DoSpriteExport(const std::vector<Image16Bpp>& images);
+void Do3DSExport(const std::vector<Image32Bpp>& images, const std::vector<Image32Bpp>& tilesets);
 
 #define WARNING_WIDTH "\
 Warning: Image (%s) is too wide to fit on the gameboy screen\n\

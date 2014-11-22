@@ -30,6 +30,53 @@ const int sprite_sizes[16] =
     -1, -1, 3,  3  // width = 8
 };
 
+Image32Bpp::Image32Bpp(Magick::Image image, const std::string& _name) : width(image.columns()), height(image.rows()), name(_name), has_alpha(false), pixels(3 * width * height)
+{
+    unsigned int num_pixels = width * height;
+    const Magick::PixelPacket* imageData = image.getConstPixels(0, 0, image.columns(), image.rows());
+
+    size_t depth;
+    MagickCore::GetMagickQuantumDepth(&depth);
+    for (unsigned int i = 0; i < num_pixels; i++)
+    {
+        const Magick::PixelPacket& packet = imageData[i];
+        int r, g, b;
+        if (depth == 8)
+        {
+            r = packet.red;
+            g = packet.green;
+            b = packet.blue;
+        }
+        else if (depth == 16)
+        {
+            r = (packet.red >> 8) & 0xFF;
+            g = (packet.green >> 8) & 0xFF;
+            b = (packet.blue >> 8) & 0xFF;
+        }
+        else
+        {
+            throw "[FATAL] Image quantum not supported\n";
+        }
+        pixels[3 * i] = b;
+        pixels[3 * i + 1] = g;
+        pixels[3 * i + 1] = r;
+    }
+}
+
+void Image32Bpp::WriteData(std::ostream& file) const
+{
+    WriteCharArray(file, name, "", pixels, 10);
+    WriteNewLine(file);
+}
+
+void Image32Bpp::WriteExport(std::ostream& file) const
+{
+    WriteExtern(file, "const unsigned char", name, "", pixels.size());
+    WriteDefine(file, name, "_SIZE", pixels.size());
+    WriteDefine(file, name, "_WIDTH", width);
+    WriteDefine(file, name, "_HEIGHT", height);
+    WriteNewLine(file);
+}
 
 Image16Bpp::Image16Bpp(Magick::Image image, const std::string& _name) : width(image.columns()), height(image.rows()), name(_name), pixels(width * height)
 {
@@ -95,7 +142,7 @@ void Image16Bpp::WriteData(std::ostream& file) const
 
 void Image16Bpp::WriteExport(std::ostream& file) const
 {
-    WriteExternShortArray(file, name, "", pixels.size());
+    WriteExtern(file, "const unsigned short", name, "", pixels.size());
     WriteDefine(file, name, "_SIZE", pixels.size());
     WriteDefine(file, name, "_WIDTH", width);
     WriteDefine(file, name, "_HEIGHT", height);
@@ -155,7 +202,7 @@ void Palette::WriteData(std::ostream& file) const
 
 void Palette::WriteExport(std::ostream& file) const
 {
-    WriteExternShortArray(file, name, "_palette", colors.size());
+    WriteExtern(file, "const unsigned short", name, "_palette", colors.size());
     WriteDefine(file, name, "_PALETTE_SIZE", colors.size());
     WriteNewLine(file);
 }
@@ -226,7 +273,7 @@ void Image8Bpp::WriteData(std::ostream& file) const
 
 void Image8Bpp::WriteExport(std::ostream& file) const
 {
-    WriteExternShortArray(file, name, "", pixels.size()/2);
+    WriteExtern(file, "const unsigned short", name, "", pixels.size()/2);
     WriteDefine(file, name, "_SIZE", pixels.size()/2);
     WriteDefine(file, name, "_WIDTH", width);
     WriteDefine(file, name, "_HEIGHT", height);
@@ -346,6 +393,7 @@ int PaletteBank::Search(const Color& a) const
 
 std::ostream& operator<<(std::ostream& file, const PaletteBank& bank)
 {
+    char buffer[7];
     std::vector<Color> colors = bank.colors;
     colors.resize(16);
     for (unsigned int i = 0; i < colors.size(); i++)
@@ -353,8 +401,9 @@ std::ostream& operator<<(std::ostream& file, const PaletteBank& bank)
         int x, y, z;
         const Color& color = colors[i];
         color.Get(x, y, z);
-        short data_read = x | (y << 5) | (z << 10);
-        WriteElement(file, data_read, colors.size(), i, 8);
+        unsigned short data_read = x | (y << 5) | (z << 10);
+        snprintf(buffer, 7, "0x%04x", data_read);
+        WriteElement(file, buffer, colors.size(), i, 8);
     }
 
     return file;
@@ -362,7 +411,7 @@ std::ostream& operator<<(std::ostream& file, const PaletteBank& bank)
 
 void WriteExportPaletteBanks(std::ostream& file, const std::string& name, const std::vector<PaletteBank>& banks)
 {
-    WriteExternShortArray(file, name, "_palette", 256);
+    WriteExtern(file, "const unsigned short", name, "_palette", 256);
     WriteDefine(file, name, "_PALETTE_SIZE", 256);
     WriteNewLine(file);
 }
@@ -473,27 +522,22 @@ void Tile<unsigned char>::UsePalette(const PaletteBank& bank)
 template <>
 std::ostream& operator<<(std::ostream& file, const Tile<unsigned char>& tile)
 {
+    char buffer[7];
     const std::vector<unsigned char>& data = tile.data;
     if (tile.bpp == 8)
     {
         for (unsigned int i = 0; i < TILE_SIZE_SHORTS_8BPP; i++)
         {
-            int px1 = data[2 * i];
-            int px2 = data[2 * i + 1];
-            unsigned short shrt = px1 | (px2 << 8);
-            WriteElement(file, shrt, TILE_SIZE_SHORTS_8BPP, i, 8);
+            snprintf(buffer, 7, "0x%02x%02x", data[2 * i + 1], data[2 * i]);
+            WriteElement(file, buffer, TILE_SIZE_SHORTS_8BPP, i, 8);
         }
     }
     else
     {
         for (unsigned int i = 0; i < TILE_SIZE_SHORTS_4BPP; i++)
         {
-            int px1 = data[4 * i];
-            int px2 = data[4 * i + 1];
-            int px3 = data[4 * i + 2];
-            int px4 = data[4 * i + 3];
-            unsigned short shrt = (px4 << 12) | (px3 << 8) | (px2 << 4) | px1;
-            WriteElement(file, shrt, TILE_SIZE_SHORTS_4BPP, i, 8);
+            snprintf(buffer, 7, "0x%01x%01x%01x%01x", data[4 * i + 3], data[4 * i + 2], data[4 * i + 1], data[4 * i]);
+            WriteElement(file, buffer, TILE_SIZE_SHORTS_4BPP, i, 8);
         }
     }
     return file;
@@ -603,7 +647,7 @@ void Tileset::WriteExport(std::ostream& file) const
     WriteDefine(file, name, "_PALETTE_TYPE", (bpp == 8), 7);
     WriteNewLine(file);
 
-    WriteExternShortArray(file, name, "_tiles", Size());
+    WriteExtern(file, "const unsigned short", name, "_tiles", Size());
     WriteDefine(file, name, "_TILES", tiles.size());
     WriteDefine(file, name, "_TILES_SIZE", Size());
     WriteNewLine(file);
@@ -920,6 +964,7 @@ void Map::Init8bpp(const Image16Bpp& image)
 
 void Map::WriteData(std::ostream& file) const
 {
+    char buffer[7];
     int type = (width > 32 ? 1 : 0) | (height > 32 ? 1 : 0) << 1;
     int num_blocks = (type == 0 ? 1 : (type < 3 ? 2 : 4));
 
@@ -945,8 +990,10 @@ void Map::WriteData(std::ostream& file) const
                     tile_id = 0;
                 else
                     tile_id = data[(y + sy) * width + (x + sx)];
+
+                snprintf(buffer, 7, "0x%04x", tile_id);
                 // Write it.
-                WriteElement(file, tile_id, num_blocks * 32 * 32, (y + sy) * width + (x + sx), 8);
+                WriteElement(file, buffer, num_blocks * 32 * 32, (y + sy) * width + (x + sx), 8);
             }
         }
     }
@@ -956,7 +1003,7 @@ void Map::WriteData(std::ostream& file) const
 
 void Map::WriteExport(std::ostream& file) const
 {
-    WriteExternShortArray(file, name, "_map", Size());
+    WriteExtern(file, "const unsigned short", name, "_map", Size());
     WriteDefine(file, name, "_WIDTH", width);
     WriteDefine(file, name, "_HEIGHT", height);
     WriteDefine(file, name, "_MAP_SIZE", Size());
@@ -1241,7 +1288,7 @@ void SpriteSheet::WriteData(std::ostream& file) const
 void SpriteSheet::WriteExport(std::ostream& file) const
 {
     unsigned int size = data.size() / (bpp == 4 ? 4 : 2);
-    WriteExternShortArray(file, name, "", size);
+    WriteExtern(file, "const unsigned short", name, "", size);
     WriteDefine(file, name, "_SIZE", size);
     WriteNewLine(file);
 
@@ -1482,7 +1529,7 @@ void SpriteScene::WriteExport(std::ostream& file) const
     }
     else
     {
-        WriteExternShortArray(file, name, "", Size());
+        WriteExtern(file, "const unsigned short", name, "", Size());
         WriteDefine(file, name, "_SIZE", Size());
         WriteNewLine(file);
 

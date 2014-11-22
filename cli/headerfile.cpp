@@ -34,6 +34,14 @@ void HeaderFile::Write(std::ostream& file)
     }
     if (ok_newline) WriteNewLine(file);
 
+    for (const auto& image_ptr : images32)
+    {
+        const Image32Bpp& image = *image_ptr;
+        image.WriteExport(file);
+
+        names.push_back(image.name);
+    }
+
     for (const auto& image_ptr : images16)
     {
         const Image16Bpp& image = *image_ptr;
@@ -110,13 +118,13 @@ void HeaderFile::Write(std::ostream& file)
 
     if (params.animated && names.size() > 1)
     {
-        WriteExternShortPtrArray(file, params.symbol_base_name, "_frames", names.size());
+        WriteExtern(file, "const unsigned short*", params.symbol_base_name, "_frames", names.size());
         WriteDefine(file, params.symbol_base_name, "_ANIMATION_FRAMES", names.size());
         WriteNewLine(file);
         for (const std::string& extra : animated_extras)
         {
             std::string extra_name = params.symbol_base_name + extra;
-            WriteExternShortPtrArray(file, extra_name, "_frames", names.size());
+            WriteExtern(file, "const unsigned short*", extra_name, "_frames", names.size());
             WriteDefine(file, extra_name, "_ANIMATION_FRAMES", names.size());
         }
     }

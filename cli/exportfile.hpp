@@ -35,6 +35,7 @@ class ExportFile
         void AddLine(const std::string& line);
         void AddImageInfo(const std::string& filename, int scene, int width, int height, bool frame);
 
+        void AddImage(std::shared_ptr<Image32Bpp> image);
         void AddImage(std::shared_ptr<Image16Bpp> image);
         void AddImage(std::shared_ptr<Image8Bpp> image);
         void AddScene(std::shared_ptr<Image8BppScene> images);
@@ -50,6 +51,7 @@ class ExportFile
         std::vector<std::string> imageInfos;
         std::vector<std::string> tilesets;
         // Cases
+        // GBA
         // 1) 1 16 bit image
         // 2) multi 16 bit images
         // 3) 1 8 bit image
@@ -62,6 +64,9 @@ class ExportFile
         // 10) a map
         // 11) multiple maps
         // 12) A spritesheet (2d and 1d)
+        // DS
+        // 3DS
+        // 1) 24 bit images
 
         // 1-2) images16
         // 3-4) images8
@@ -85,6 +90,8 @@ class ExportFile
         std::shared_ptr<Tileset> tileset;
         std::vector<std::shared_ptr<Map>> maps;
         std::shared_ptr<SpriteScene> spriteScene;
+
+        std::vector<std::shared_ptr<Image32Bpp>> images32;
 };
 
 #endif

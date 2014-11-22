@@ -22,65 +22,70 @@ void InitFiles(std::ofstream& file_c, std::ofstream& file_h, const std::string& 
 
 void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<unsigned short>& data, unsigned int items_per_row)
 {
+    char buffer[7];
     file << "const unsigned short " << name << append << "[" << data.size() << "] =\n{\n\t";
     for (unsigned int i = 0; i < data.size(); i++)
     {
-        unsigned short data_read = data[i];
-        WriteElement(file, data_read, data.size(), i, items_per_row);
+        snprintf(buffer, 7, "0x%04x", data[i]);
+        WriteElement(file, buffer, data.size(), i, items_per_row);
     }
     file << "\n};\n";
 }
 
 void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<unsigned char>& data, unsigned int items_per_row)
 {
+    char buffer[7];
     unsigned int size = data.size() / 2;
     file << "const unsigned short " << name << append << "[" << size << "] =\n{\n\t";
     for (unsigned int i = 0; i < size; i++)
     {
-        unsigned char data_read1 = data[2 * i];
-        unsigned char data_read2 = data[2 * i + 1];
-        unsigned short shrt = data_read2 << 8 | data_read1;
-        WriteElement(file, shrt, size, i, items_per_row);
+        snprintf(buffer, 7, "0x%02x%02x", data[2 * i + 1], data[2 * i]);
+        WriteElement(file, buffer, size, i, items_per_row);
     }
     file << "\n};\n";
 }
 
 void WriteShortArray4Bit(std::ostream& file, const std::string& name, const std::string& append, const std::vector<unsigned char>& data, unsigned int items_per_row)
 {
+    char buffer[7];
     unsigned int size = data.size() / 4;
     file << "const unsigned short " << name << append << "[" << size << "] =\n{\n\t";
     for (unsigned int i = 0; i < size; i++)
     {
-        unsigned char px1 = data[4 * i];
-        unsigned char px2 = data[4 * i + 1];
-        unsigned char px3 = data[4 * i + 2];
-        unsigned char px4 = data[4 * i + 3];
-        unsigned short shrt = (px4 << 12) | (px3 << 8) | (px2 << 4) | px1;
-        WriteElement(file, shrt, size, i, items_per_row);
+        snprintf(buffer, 7, "0x%01x%01x%01x%01x", data[4 * i + 3], data[4 * i + 2], data[4 * i + 1], data[4 * i]);
+        WriteElement(file, buffer, size, i, items_per_row);
     }
     file << "\n};\n";
 }
 
 void WriteShortArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<Color>& data, unsigned int items_per_row)
 {
+    char buffer[7];
     int x, y, z;
     file << "const unsigned short " << name << append << "[" << data.size() << "] =\n{\n\t";
     for (unsigned int i = 0; i < data.size(); i++)
     {
         const Color& color = data[i];
         color.Get(x, y, z);
-        short data_read = x | (y << 5) | (z << 10);
-        WriteElement(file, data_read, data.size(), i, items_per_row);
+        unsigned short data_read = x | (y << 5) | (z << 10);
+        snprintf(buffer, 7, "0x%04x", data_read);
+        WriteElement(file, buffer, data.size(), i, items_per_row);
     }
     file << "\n};\n";
 }
 
-void WriteElement(std::ostream& file, unsigned short data, unsigned int size, unsigned int counter, unsigned int items_per_row)
+void WriteCharArray(std::ostream& file, const std::string& name, const std::string& append, const std::vector<unsigned char>& data, unsigned int items_per_row)
 {
-    char buffer[7];
-    snprintf(buffer, 7, "0x%04x", data);
-    WriteElement(file, buffer, size, counter, items_per_row);
+    char buffer[5];
+    file << "const unsigned char " << name << append << "[" << data.size() << "] =\n{\n\t";
+    for (unsigned int i = 0; i < data.size(); i++)
+    {
+        snprintf(buffer, 5, "0x%02x", data[i]);
+        WriteElement(file, buffer, data.size(), i, items_per_row);
+    }
+    file << "\n};\n";
 }
+
 
 void WriteElement(std::ostream& file, const std::string& data, unsigned int size, unsigned int counter,
                   unsigned int items_per_row)
@@ -117,14 +122,9 @@ void WriteShortPtrArray(std::ostream& file, const std::string& name, const std::
     file << "\n};\n";
 }
 
-void WriteExternShortArray(std::ostream& file, const std::string& name, const std::string& append, unsigned int size)
+void WriteExtern(std::ostream& file, const std::string& type, const std::string& name, const std::string& append, unsigned int size)
 {
-    file << "extern const unsigned short " << name << append << "[" << size << "];\n";
-}
-
-void WriteExternShortPtrArray(std::ostream& file, const std::string& name, const std::string& append, unsigned int size)
-{
-    file << "extern const unsigned short* " << name << append << "[" << size << "];\n";
+    file << "extern " << type << " " << name << append << "[" << size << "];\n";
 }
 
 void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, int value)
@@ -138,7 +138,6 @@ void WriteDefine(std::ostream& file, const std::string& name, const std::string&
     std::string name_cap = ToUpper(name);
     file << "#define " << name_cap << append << " (" << value << " << " << shift << ")\n";
 }
-
 
 void WriteDefine(std::ostream& file, const std::string& name, const std::string& append, const std::string& value)
 {

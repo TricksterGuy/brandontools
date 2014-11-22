@@ -60,6 +60,8 @@ static const wxCmdLineEntryDesc cmd_descriptions[] =
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
     {wxCMD_LINE_SWITCH, "map", "map", "Treat image as a map (-tileset=image required) and export it against tileset image given.",
         wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL},
+    {wxCMD_LINE_OPTION, "device", "device", "Special Mode String (-device=(gba, ds, 3ds))",
+        wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL},
 
     // General helpful options
     {wxCMD_LINE_OPTION, "resize", "resize", "(Usage -resize=240,160) Resizes ALL images (except images passed in through --tileset) given to w,h",
@@ -161,6 +163,13 @@ enum
     MAP = 9,
 };
 
+enum
+{
+    GBA = 0,
+    DS = 1,
+    DS3 = 2,
+};
+
 // Parsed command line options
 wxArrayString files;
 // Debugging
@@ -173,6 +182,7 @@ bool sprites = false;
 bool tiles = false;
 bool map = false;
 long bpp = 8;
+wxString device;
 // Helpful options
 wxString names;
 std::vector<std::string> overrideNames;
@@ -239,6 +249,7 @@ bool BrandonToolsApp::OnCmdLineParsed(wxCmdLineParser& parser)
     mode0 = parser.Found(_("mode0"));
     mode3 = parser.Found(_("mode3"));
     mode4 = parser.Found(_("mode4"));
+    parser.Found(_("device"), &device);
     sprites = parser.Found(_("sprites"));
     tiles = parser.Found(_("tiles"));
     map = parser.Found(_("map"));
@@ -331,6 +342,18 @@ bool BrandonToolsApp::Validate()
     if (sprites) params.mode = SPRITES;
     if (tiles) params.mode = TILES;
     if (map) params.mode = MAP;
+
+    if (device.IsSameAs("GBA", false) || device.IsEmpty())
+        params.device = GBA;
+    else if (device.IsSameAs("DS", false))
+        params.device = DS;
+    else if (device.IsSameAs("3DS", false))
+        params.device = DS3;
+    else
+    {
+        std::cerr << "[WARNING] Invalid device string " <<  device.ToStdString() << " assuming GBA";
+    }
+
     if (bpp != 4 && bpp != 8 && (mode0 || params.mode >= SPECIAL_MODES))
     {
         std::cerr << "[FATAL] Invalid bpp " << bpp << " specified.  Can only set bpp to 4 or 8.\n";
@@ -608,41 +631,65 @@ bool BrandonToolsApp::DoCheckAndLabelImages()
 
 bool BrandonToolsApp::DoExportImages()
 {
-    std::vector<Image16Bpp> images;
-    for (unsigned int i = 0; i < params.images.size(); i++)
+    if (params.device == GBA)
     {
-        images.push_back(Image16Bpp(params.images[i], params.names[i]));
-    }
+        std::vector<Image16Bpp> images;
+        for (unsigned int i = 0; i < params.images.size(); i++)
+        {
+            images.push_back(Image16Bpp(params.images[i], params.names[i]));
+        }
 
-    std::vector<Image16Bpp> tilesets;
-    for (unsigned int i = 0; i < params.tileset.size(); i++)
-    {
-        tilesets.push_back(Image16Bpp(params.tileset[i], ""));
-    }
+        std::vector<Image16Bpp> tilesets;
+        for (unsigned int i = 0; i < params.tileset.size(); i++)
+        {
+            tilesets.push_back(Image16Bpp(params.tileset[i], ""));
+        }
 
-    switch (params.mode)
+        switch (params.mode)
+        {
+            case MODE0:
+                DoMode0(images);
+                break;
+            case MODE3:
+                DoMode3(images);
+                break;
+            case MODE4:
+                DoMode4(images);
+                break;
+            case SPRITES:
+                DoSpriteExport(images);
+                break;
+            case TILES:
+                DoTilesetExport(images);
+                break;
+            case MAP:
+                DoMapExport(images, tilesets);
+                break;
+            default:
+                std::cerr << "No mode specified image not exported";
+                return false;
+        }
+    }
+    else if (params.device == DS)
     {
-        case MODE0:
-            DoMode0(images);
-            break;
-        case MODE3:
-            DoMode3(images);
-            break;
-        case MODE4:
-            DoMode4(images);
-            break;
-        case SPRITES:
-            DoSpriteExport(images);
-            break;
-        case TILES:
-            DoTilesetExport(images);
-            break;
-        case MAP:
-            DoMapExport(images, tilesets);
-            break;
-        default:
-            std::cerr << "No mode specified image not exported";
-            return false;
+        std::cerr << "Not supported yet";
+        return false;
+    }
+    else if (params.device == DS3)
+    {
+        std::vector<Image32Bpp> images;
+        for (unsigned int i = 0; i < params.images.size(); i++)
+        {
+            images.push_back(Image32Bpp(params.images[i], params.names[i]));
+        }
+
+        std::vector<Image32Bpp> tilesets;
+        for (unsigned int i = 0; i < params.tileset.size(); i++)
+        {
+            tilesets.push_back(Image32Bpp(params.tileset[i], ""));
+        }
+
+        Do3DSExport(images, tilesets);
     }
 
     if (params.to_stdout)

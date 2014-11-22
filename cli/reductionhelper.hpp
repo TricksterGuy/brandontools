@@ -25,6 +25,21 @@
 
 #include "color.hpp"
 
+class Image32Bpp
+{
+    public:
+        Image32Bpp(Magick::Image image, const std::string& _name);
+        Image32Bpp(unsigned int _width, unsigned int _height) : width(_width), height(_height), name(""), pixels(width * height, 0) {}
+        unsigned int Size() const {return width * height;};
+        void WriteData(std::ostream& file) const;
+        void WriteExport(std::ostream& file) const;
+        unsigned int width;
+        unsigned int height;
+        std::string name;
+        bool has_alpha;
+        std::vector<unsigned char> pixels;
+};
+
 class Image16Bpp
 {
     public:
