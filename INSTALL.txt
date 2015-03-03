@@ -1,5 +1,8 @@
 Its better if you clone my repo instead of downloading the source in case something is found broken and I fix it.
 
+Development of this program has ended if you are currently taking 2110 and came here you should be redirected to here, the new version of this program - https://github.com/TricksterGuy/nin10kit
+Install this program at your own risk, the command line interface is very solid, but the GUI frontend has issues.  All of these are fixed with nin10kit.
+
 To install brandontools
 -----------------------
 1) Install dependancies. You need ImageMagick or magick++, and wxwidgets 3.0 (Which should have been installed via complx). so get that terminal ready
