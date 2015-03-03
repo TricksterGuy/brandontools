@@ -1,6 +1,8 @@
 brandontools
 ============
 
+# **If you are taking 2110 currently (Spring 2015) You are in the wrong place go here instead This repo is no longer being worked on! - https://github.com/TricksterGuy/nin10kit**
+
 This is a little nifty program I wrote back in Spring 2010, because I was unhappy with grit, jgrit, gfx2gba, etc.  My aim for this program is a simple command line interface that converts images, videos, animated images into a format suitable for the gba.
 
 * Supports all GBA Modes (except for affine backgrounds)
